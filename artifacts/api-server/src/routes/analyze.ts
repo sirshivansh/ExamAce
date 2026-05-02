@@ -24,6 +24,8 @@ const anthropic = new Anthropic({
   apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
 });
 
+const FALLBACK = { repeatedQuestions: [], importantTopics: [], expectedQuestions: [] };
+
 const ANALYSIS_PROMPT = `You are an expert exam analyst. Carefully read the exam paper content below and return a JSON object with exactly two fields.
 
 TASK 1 — repeatedQuestions:
@@ -88,109 +90,147 @@ Return ONLY a valid JSON object in this exact shape — no markdown, no extra te
   ]
 }`;
 
+async function callAI(prompt: string): Promise<string> {
+  const msg = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 8192,
+    messages: [{ role: "user", content: prompt }],
+  });
+  const block = msg.content[0];
+  if (block.type !== "text") throw new Error("Unexpected AI response block type: " + block.type);
+  return block.text;
+}
+
+function extractJSON(raw: string): unknown {
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("No JSON object found in AI response");
+  return JSON.parse(match[0]);
+}
+
+async function callAIWithRetry(prompt: string, label: string, log: (msg: string, data?: unknown) => void): Promise<string | null> {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const text = await callAI(prompt);
+      log(`[${label}] AI response (attempt ${attempt}), length=${text.length}`);
+      log(`[${label}] Raw AI response: ${text.slice(0, 500)}${text.length > 500 ? "…" : ""}`);
+      return text;
+    } catch (err) {
+      log(`[${label}] AI call failed on attempt ${attempt}`, err);
+      if (attempt === 2) return null;
+    }
+  }
+  return null;
+}
+
 router.post("/api/analyze", upload.single("file"), async (req, res) => {
+  const log = (msg: string, data?: unknown) => {
+    if (data !== undefined) {
+      req.log.info({ data }, msg);
+    } else {
+      req.log.info(msg);
+    }
+  };
+  const logErr = (msg: string, err?: unknown) => req.log.error({ err }, msg);
+
   if (!req.file) {
     res.status(400).json({ error: "No PDF file uploaded" });
     return;
   }
 
+  // ── Step 1: Parse PDF ────────────────────────────────────────────────────
   let pdfText: string;
   try {
     const parsed = await pdfParse(req.file.buffer);
-    pdfText = parsed.text;
-    if (!pdfText || pdfText.trim().length < 50) {
-      res.status(400).json({
-        error: "PDF appears to be empty or unreadable. Please upload a text-based PDF.",
-      });
+    pdfText = parsed.text ?? "";
+    log(`PDF parsed successfully. Extracted text length: ${pdfText.length} characters`);
+
+    if (pdfText.trim().length < 50) {
+      log("PDF text too short — treating as unreadable");
+      res.status(400).json({ error: "Could not read PDF properly. The file appears to be empty or image-based." });
       return;
     }
-  } catch {
-    res.status(400).json({
-      error: "Failed to parse PDF. Please ensure it is a valid, text-based PDF.",
-    });
+  } catch (err) {
+    logErr("PDF parsing threw an exception", err);
+    res.status(400).json({ error: "Could not read PDF properly. Please upload a valid text-based PDF." });
     return;
   }
 
   const truncatedText = pdfText.slice(0, 14000);
 
+  // ── Step 2: Main analysis (repeated questions + important topics) ─────────
+  let repeatedQuestions: Array<{ question: string; count: number }> = [];
+  let importantTopics: Array<{ topic: string; priority: string }> = [];
+
+  const analysisRaw = await callAIWithRetry(
+    ANALYSIS_PROMPT + truncatedText,
+    "analysis",
+    log
+  );
+
+  if (analysisRaw === null) {
+    logErr("Analysis AI call failed after 2 attempts — returning fallback");
+    res.json(FALLBACK);
+    return;
+  }
+
   try {
-    // Step 1: Analyse the exam paper
-    const analysisMsg = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      messages: [{ role: "user", content: ANALYSIS_PROMPT + truncatedText }],
-    });
+    const parsed = extractJSON(analysisRaw) as {
+      repeatedQuestions?: unknown[];
+      importantTopics?: unknown[];
+    };
 
-    const analysisContent = analysisMsg.content[0];
-    if (analysisContent.type !== "text") {
-      res.status(500).json({ error: "Unexpected AI response format" });
-      return;
+    if (!Array.isArray(parsed.repeatedQuestions) || !Array.isArray(parsed.importantTopics)) {
+      throw new Error("Response JSON missing required arrays");
     }
 
-    let analysisResult: { repeatedQuestions: unknown[]; importantTopics: unknown[] };
-    try {
-      const raw = analysisContent.text.trim();
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (!match) throw new Error("No JSON found");
-      analysisResult = JSON.parse(match[0]);
-    } catch {
-      res.status(500).json({ error: "Failed to parse AI response. Please try again." });
-      return;
-    }
-
-    if (!Array.isArray(analysisResult.repeatedQuestions) || !Array.isArray(analysisResult.importantTopics)) {
-      res.status(500).json({ error: "AI returned unexpected structure. Please try again." });
-      return;
-    }
-
-    const repeatedQuestions = (
-      analysisResult.repeatedQuestions as Array<{ question: string; count: number }>
-    )
+    repeatedQuestions = (parsed.repeatedQuestions as Array<{ question: string; count: number }>)
       .filter((q) => q.question && typeof q.count === "number")
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    const importantTopics = (
-      analysisResult.importantTopics as Array<{ topic: string; priority: string }>
-    ).filter((t) => t.topic && ["High", "Medium", "Low"].includes(t.priority));
+    importantTopics = (parsed.importantTopics as Array<{ topic: string; priority: string }>)
+      .filter((t) => t.topic && ["High", "Medium", "Low"].includes(t.priority));
 
-    // Step 2: Generate expected questions in parallel with the response build-up
-    let expectedQuestions: string[] = [];
-    try {
-      const expectedMsg = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        messages: [
-          {
-            role: "user",
-            content: buildExpectedQuestionsPrompt(repeatedQuestions, importantTopics),
-          },
-        ],
-      });
-
-      const expectedContent = expectedMsg.content[0];
-      if (expectedContent.type === "text") {
-        const raw = expectedContent.text.trim();
-        const match = raw.match(/\{[\s\S]*\}/);
-        if (match) {
-          const parsed = JSON.parse(match[0]);
-          if (Array.isArray(parsed.expectedQuestions)) {
-            expectedQuestions = (parsed.expectedQuestions as unknown[])
-              .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
-              .slice(0, 10);
-          }
-        }
-      }
-    } catch (err) {
-      // Non-fatal: return empty array if prediction fails
-      req.log?.error({ err }, "Expected questions generation failed — returning empty array");
-    }
-
-    res.json({ repeatedQuestions, importantTopics, expectedQuestions });
+    log(`Analysis parsed: ${repeatedQuestions.length} repeated questions, ${importantTopics.length} topics`);
   } catch (err) {
-    req.log?.error({ err }, "Anthropic API error");
-    res.status(500).json({ error: "AI analysis failed. Please try again." });
+    logErr("Failed to parse analysis JSON — returning fallback", err);
+    res.json(FALLBACK);
+    return;
   }
+
+  // ── Step 3: Predicted questions (non-fatal — empty array on failure) ─────
+  let expectedQuestions: string[] = [];
+
+  if (repeatedQuestions.length > 0 || importantTopics.length > 0) {
+    const expectedRaw = await callAIWithRetry(
+      buildExpectedQuestionsPrompt(repeatedQuestions, importantTopics),
+      "expected-questions",
+      log
+    );
+
+    if (expectedRaw !== null) {
+      try {
+        const parsed = extractJSON(expectedRaw) as { expectedQuestions?: unknown[] };
+        if (Array.isArray(parsed.expectedQuestions)) {
+          expectedQuestions = (parsed.expectedQuestions as unknown[])
+            .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+            .slice(0, 10);
+          log(`Expected questions parsed: ${expectedQuestions.length} questions`);
+        } else {
+          throw new Error("expectedQuestions field is not an array");
+        }
+      } catch (err) {
+        logErr("Failed to parse expected questions JSON — using empty array", err);
+      }
+    } else {
+      logErr("Expected questions AI call failed after 2 attempts — using empty array");
+    }
+  } else {
+    log("Skipping expected questions generation — no analysis data to base them on");
+  }
+
+  // ── Always returns valid JSON ─────────────────────────────────────────────
+  res.json({ repeatedQuestions, importantTopics, expectedQuestions });
 });
 
 export default router;
