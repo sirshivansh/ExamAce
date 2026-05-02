@@ -247,6 +247,58 @@
  * Even without handling focused or not, this is six possible combinations that
  * need to be distinguished from eachother visually.
  */
+/* Question card hover glow */
+.question-glow {
+  transition: border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+}
+.question-glow:hover {
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 0 18px 0 hsl(var(--primary) / 0.12);
+}
+.question-glow.is-active {
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.55), 0 0 20px 0 hsl(var(--primary) / 0.18);
+}
+
+/* Top-question crown treatment */
+.top-question {
+  background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(190 90% 50% / 0.06) 100%);
+  border-color: hsl(190 90% 50% / 0.35);
+}
+.top-question:hover {
+  border-color: hsl(190 90% 50% / 0.6);
+  box-shadow: 0 0 0 1px hsl(190 90% 50% / 0.3), 0 0 20px 0 hsl(190 90% 50% / 0.15);
+}
+
+/* High-priority topic left accent */
+.topic-high {
+  border-left: 3px solid hsl(0 84% 60% / 0.7);
+  background: linear-gradient(90deg, hsl(0 84% 60% / 0.06) 0%, hsl(var(--card)) 40%);
+}
+
+/* Thin custom scrollbar for lists */
+.scrollable-list {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+.scrollable-list::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollable-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollable-list::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 99px;
+}
+
+/* Staggered list-item entrance */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item {
+  animation: fadeSlideUp 280ms ease both;
+}
+
 @layer utilities {
 
   /* Hide ugly search cancel button in Chrome until we can style it properly */
