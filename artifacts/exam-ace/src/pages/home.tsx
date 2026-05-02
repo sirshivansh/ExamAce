@@ -2,10 +2,10 @@ import { useState, useRef, useCallback } from "react";
 import {
   Upload, FileText, Loader2, BarChart2, BookOpen,
   CheckCircle, AlertCircle, ChevronRight, X,
-  Lightbulb, List, BookMarked, AlignLeft,
+  Lightbulb, List, BookMarked, AlignLeft, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -23,6 +23,7 @@ interface ImportantTopic {
 interface AnalysisResult {
   repeatedQuestions: RepeatedQuestion[];
   importantTopics: ImportantTopic[];
+  expectedQuestions: string[];
 }
 
 interface AnswerDetail {
@@ -37,6 +38,137 @@ interface AnswerPanelState {
   answer: AnswerDetail | null;
   loading: boolean;
   error: string | null;
+}
+
+function ClickableQuestion({
+  question,
+  badge,
+  isActive,
+  onClick,
+}: {
+  question: string;
+  badge?: React.ReactNode;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full text-left group rounded-lg border px-5 py-4 transition-all hover:border-primary/50 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+        isActive ? "border-primary/60 bg-primary/[0.08]" : "border-border bg-card"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <p className="text-sm font-medium leading-snug flex-1">{question}</p>
+        <div className="flex items-center gap-2 shrink-0 mt-0.5">
+          {badge}
+          <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function AnswerPanel({
+  state,
+  onClose,
+}: {
+  state: AnswerPanelState;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      data-testid="panel-answer"
+      className="rounded-xl border border-border bg-card shadow-lg animate-in fade-in slide-in-from-right-4 duration-300 overflow-hidden"
+    >
+      <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-muted/30">
+        <p className="text-sm font-semibold leading-snug text-foreground line-clamp-3 flex-1">
+          {state.question}
+        </p>
+        <button
+          data-testid="button-close-answer"
+          onClick={onClose}
+          className="shrink-0 p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {state.loading && (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-sm">Generating answer...</span>
+        </div>
+      )}
+
+      {state.error && (
+        <div className="p-5">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription data-testid="text-answer-error">{state.error}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {state.answer && (
+        <div className="p-5 flex flex-col gap-5 text-sm">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wide">
+              <AlignLeft className="w-3.5 h-3.5" />
+              Definition
+            </div>
+            <p className="leading-relaxed text-foreground" data-testid="text-definition">
+              {state.answer.definition}
+            </p>
+          </div>
+
+          <div className="border-t border-border/50" />
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wide">
+              <List className="w-3.5 h-3.5" />
+              Explanation
+            </div>
+            <ul className="flex flex-col gap-2" data-testid="list-explanation">
+              {state.answer.explanation.map((point, i) => (
+                <li key={i} className="flex items-start gap-2.5">
+                  <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  <span className="leading-relaxed text-muted-foreground">{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {state.answer.example && (
+            <>
+              <div className="border-t border-border/50" />
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wide">
+                  <Lightbulb className="w-3.5 h-3.5" />
+                  Example
+                </div>
+                <p className="leading-relaxed text-muted-foreground italic" data-testid="text-example">
+                  {state.answer.example}
+                </p>
+              </div>
+            </>
+          )}
+
+          <div className="border-t border-border/50" />
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wide">
+              <BookMarked className="w-3.5 h-3.5" />
+              Conclusion
+            </div>
+            <p className="leading-relaxed text-foreground" data-testid="text-conclusion">
+              {state.answer.conclusion}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Home() {
@@ -62,9 +194,9 @@ export default function Home() {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type === "application/pdf") {
-      setFile(droppedFile);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped && dropped.type === "application/pdf") {
+      setFile(dropped);
       setError(null);
     } else {
       setError("Please upload a valid PDF file.");
@@ -72,9 +204,9 @@ export default function Home() {
   }, []);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === "application/pdf") {
-      setFile(selectedFile);
+    const selected = e.target.files?.[0];
+    if (selected && selected.type === "application/pdf") {
+      setFile(selected);
       setError(null);
     } else {
       setError("Please upload a valid PDF file.");
@@ -92,13 +224,10 @@ export default function Home() {
     formData.append("file", file);
 
     try {
-      const response = await fetch("/api/analyze", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch("/api/analyze", { method: "POST", body: formData });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Analysis failed. Please try again.");
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Analysis failed. Please try again.");
       }
       const data: AnalysisResult = await response.json();
       setResult(data);
@@ -111,7 +240,6 @@ export default function Home() {
 
   const handleQuestionClick = async (question: string) => {
     setAnswerPanel({ question, answer: null, loading: true, error: null });
-
     try {
       const response = await fetch("/api/generate-answer", {
         method: "POST",
@@ -119,8 +247,8 @@ export default function Home() {
         body: JSON.stringify({ question }),
       });
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to generate answer.");
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to generate answer.");
       }
       const data: { answer: AnswerDetail } = await response.json();
       setAnswerPanel({ question, answer: data.answer, loading: false, error: null });
@@ -151,7 +279,7 @@ export default function Home() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ExamAce</h1>
           <p className="text-muted-foreground max-w-[560px]">
-            Upload your exam PDF to extract repeated questions, priority topics, and AI-generated model answers.
+            Upload your exam PDF to extract repeated questions, priority topics, predicted questions, and AI-generated model answers.
           </p>
         </header>
 
@@ -234,45 +362,39 @@ export default function Home() {
               {/* Left: Tabs */}
               <div>
                 <Tabs defaultValue="repeated" className="w-full">
-                  <TabsList className="w-full grid grid-cols-2 mb-6">
-                    <TabsTrigger value="repeated" className="gap-2">
+                  <TabsList className="w-full grid grid-cols-3 mb-6">
+                    <TabsTrigger value="repeated" className="gap-1.5">
                       <CheckCircle className="w-4 h-4" />
-                      <span className="hidden sm:inline">Repeated Questions</span>
-                      <span className="sm:hidden">Repeated</span>
+                      <span className="hidden sm:inline">Repeated</span>
                     </TabsTrigger>
-                    <TabsTrigger value="topics" className="gap-2">
+                    <TabsTrigger value="topics" className="gap-1.5">
                       <BarChart2 className="w-4 h-4" />
-                      <span className="hidden sm:inline">Important Topics</span>
-                      <span className="sm:hidden">Topics</span>
+                      <span className="hidden sm:inline">Topics</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="expected" className="gap-1.5">
+                      <Sparkles className="w-4 h-4" />
+                      <span className="hidden sm:inline">Expected</span>
                     </TabsTrigger>
                   </TabsList>
 
+                  {/* Repeated Questions */}
                   <TabsContent value="repeated" className="space-y-3">
                     <p className="text-xs text-muted-foreground mb-1">
                       Click a question to generate a model answer.
                     </p>
                     {result.repeatedQuestions.length > 0 ? (
                       result.repeatedQuestions.map((item, i) => (
-                        <button
+                        <ClickableQuestion
                           key={i}
-                          data-testid={`card-question-${i}`}
+                          question={item.question}
+                          badge={
+                            <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5">
+                              {item.count}×
+                            </Badge>
+                          }
+                          isActive={answerPanel?.question === item.question}
                           onClick={() => handleQuestionClick(item.question)}
-                          className={`w-full text-left group rounded-lg border px-5 py-4 transition-all hover:border-primary/50 hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/40 ${
-                            answerPanel?.question === item.question
-                              ? "border-primary/60 bg-primary/8"
-                              : "border-border bg-card"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <p className="text-sm font-medium leading-snug flex-1">{item.question}</p>
-                            <div className="flex items-center gap-2 shrink-0 mt-0.5">
-                              <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5">
-                                {item.count}×
-                              </Badge>
-                              <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </div>
-                          </div>
-                        </button>
+                        />
                       ))
                     ) : (
                       <div className="text-center py-12 text-muted-foreground border rounded-lg border-dashed">
@@ -281,6 +403,7 @@ export default function Home() {
                     )}
                   </TabsContent>
 
+                  {/* Important Topics */}
                   <TabsContent value="topics" className="space-y-3">
                     {result.importantTopics.length > 0 ? (
                       result.importantTopics.map((topic, i) => (
@@ -301,111 +424,38 @@ export default function Home() {
                       </div>
                     )}
                   </TabsContent>
+
+                  {/* Expected Questions */}
+                  <TabsContent value="expected" className="space-y-3">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      AI-predicted questions for the next exam sitting. Click to generate a model answer.
+                    </p>
+                    {result.expectedQuestions.length > 0 ? (
+                      result.expectedQuestions.map((q, i) => (
+                        <ClickableQuestion
+                          key={i}
+                          question={q}
+                          badge={
+                            <Badge className="text-xs font-semibold border bg-primary/10 text-primary border-primary/20 shrink-0">
+                              Predicted
+                            </Badge>
+                          }
+                          isActive={answerPanel?.question === q}
+                          onClick={() => handleQuestionClick(q)}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground border rounded-lg border-dashed">
+                        No expected questions could be predicted.
+                      </div>
+                    )}
+                  </TabsContent>
                 </Tabs>
               </div>
 
               {/* Right: Answer Panel */}
               {answerPanel && (
-                <div
-                  data-testid="panel-answer"
-                  className="rounded-xl border border-border bg-card shadow-lg animate-in fade-in slide-in-from-right-4 duration-300 overflow-hidden"
-                >
-                  {/* Panel header */}
-                  <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-muted/30">
-                    <p className="text-sm font-semibold leading-snug text-foreground line-clamp-3 flex-1">
-                      {answerPanel.question}
-                    </p>
-                    <button
-                      data-testid="button-close-answer"
-                      onClick={() => setAnswerPanel(null)}
-                      className="shrink-0 p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Loading */}
-                  {answerPanel.loading && (
-                    <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
-                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                      <span className="text-sm">Generating answer...</span>
-                    </div>
-                  )}
-
-                  {/* Error */}
-                  {answerPanel.error && (
-                    <div className="p-5">
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription data-testid="text-answer-error">{answerPanel.error}</AlertDescription>
-                      </Alert>
-                    </div>
-                  )}
-
-                  {/* Answer content */}
-                  {answerPanel.answer && (
-                    <div className="p-5 flex flex-col gap-5 text-sm">
-
-                      {/* Definition */}
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wide">
-                          <AlignLeft className="w-3.5 h-3.5" />
-                          Definition
-                        </div>
-                        <p className="leading-relaxed text-foreground" data-testid="text-definition">
-                          {answerPanel.answer.definition}
-                        </p>
-                      </div>
-
-                      <div className="border-t border-border/50" />
-
-                      {/* Explanation */}
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wide">
-                          <List className="w-3.5 h-3.5" />
-                          Explanation
-                        </div>
-                        <ul className="flex flex-col gap-2" data-testid="list-explanation">
-                          {answerPanel.answer.explanation.map((point, i) => (
-                            <li key={i} className="flex items-start gap-2.5">
-                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                              <span className="leading-relaxed text-muted-foreground">{point}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      {/* Example */}
-                      {answerPanel.answer.example && (
-                        <>
-                          <div className="border-t border-border/50" />
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wide">
-                              <Lightbulb className="w-3.5 h-3.5" />
-                              Example
-                            </div>
-                            <p className="leading-relaxed text-muted-foreground italic" data-testid="text-example">
-                              {answerPanel.answer.example}
-                            </p>
-                          </div>
-                        </>
-                      )}
-
-                      <div className="border-t border-border/50" />
-
-                      {/* Conclusion */}
-                      <div className="flex flex-col gap-2">
-                        <div className="flex items-center gap-2 text-primary font-semibold text-xs uppercase tracking-wide">
-                          <BookMarked className="w-3.5 h-3.5" />
-                          Conclusion
-                        </div>
-                        <p className="leading-relaxed text-foreground" data-testid="text-conclusion">
-                          {answerPanel.answer.conclusion}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <AnswerPanel state={answerPanel} onClose={() => setAnswerPanel(null)} />
               )}
             </div>
           </div>

@@ -31,6 +31,8 @@ export interface ImportantTopic {
 export interface AnalysisResult {
   repeatedQuestions: RepeatedQuestion[];
   importantTopics: ImportantTopic[];
+  /** Predicted questions likely to appear in the next exam sitting */
+  expectedQuestions: string[];
 }
 
 export interface GenerateAnswerBody {

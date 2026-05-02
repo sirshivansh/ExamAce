@@ -98,9 +98,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ImportantTopic"
+        expectedQuestions:
+          type: array
+          items:
+            type: string
+          description: Predicted questions likely to appear in the next exam sitting
       required:
         - repeatedQuestions
         - importantTopics
+        - expectedQuestions
     GenerateAnswerBody:
       type: object
       properties:
