@@ -5,7 +5,7 @@ import {
   BookMarked, AlignLeft, Sparkles, Trophy, MousePointerClick,
   Repeat2, Brain, CheckCircle2, Zap, ArrowRight, GraduationCap,
   ZoomIn, ZoomOut, RotateCcw, ChevronLeft, ChevronRight as ChevronR,
-  FileSearch, MapPin,
+  FileSearch, MapPin, Sun, Moon,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -408,6 +408,44 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+
+function ThemeToggle() {
+  const [isLight, setIsLight] = useState(() => {
+    try { return localStorage.getItem("examace-theme") === "light"; } catch { return false; }
+  });
+  const [spinning, setSpinning] = useState(false);
+
+  const toggle = () => {
+    const next = !isLight;
+    setIsLight(next);
+    setSpinning(true);
+    setTimeout(() => setSpinning(false), 420);
+
+    try { localStorage.setItem("examace-theme", next ? "light" : "dark"); } catch { /* ignore */ }
+
+    // Enable transitions only during the toggle (not on initial load)
+    document.documentElement.classList.add("theme-transitioning");
+    document.documentElement.classList.toggle("light", next);
+    setTimeout(() => document.documentElement.classList.remove("theme-transitioning"), 300);
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
+      className="fixed top-4 right-4 z-50 w-9 h-9 rounded-full flex items-center justify-center border border-border/70 bg-card/90 backdrop-blur-sm hover:bg-muted shadow-sm hover:shadow-md transition-shadow duration-200"
+    >
+      <span className={spinning ? "theme-toggle-spin" : ""}>
+        {isLight
+          ? <Moon className="w-4 h-4 text-primary" />
+          : <Sun className="w-4 h-4 text-amber-400" />
+        }
+      </span>
+    </button>
+  );
+}
+
 const FEATURE_HIGHLIGHTS = [
   { icon: Repeat2, label: "Repeated Questions", desc: "Groups similar questions and ranks by frequency", color: "text-sky-400", bg: "bg-sky-400/10" },
   { icon: BarChart2, label: "Priority Topics", desc: "Identifies High / Medium / Low priority topics", color: "text-violet-400", bg: "bg-violet-400/10" },
@@ -516,6 +554,8 @@ export default function Home() {
 
   return (
     <div className="min-h-[100dvh] w-full flex flex-col items-center bg-background overflow-x-hidden">
+
+      <ThemeToggle />
 
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
