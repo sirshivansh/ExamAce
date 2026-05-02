@@ -140,7 +140,7 @@ async function callAIWithRetry(
   return null;
 }
 
-router.post("/api/analyze", upload.array("file", 10), async (req, res) => {
+router.post("/analyze", upload.array("file", 10), async (req, res) => {
   const log = (msg: string) => req.log.info(msg);
   const logErr = (msg: string, err?: unknown) => {
     const stack = err instanceof Error ? err.stack : String(err);

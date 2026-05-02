@@ -34,7 +34,7 @@ Rules:
 - conclusion: wrap up with why the topic matters or what it achieves.
 - Keep total length appropriate for a 10-mark answer — thorough but not padded.`;
 
-router.post("/api/generate-answer", async (req, res) => {
+router.post("/generate-answer", async (req, res) => {
   const { question } = req.body as { question?: string };
 
   if (!question || typeof question !== "string" || question.trim().length === 0) {
