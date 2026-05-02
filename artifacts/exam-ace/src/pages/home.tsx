@@ -204,7 +204,7 @@ const FEATURE_HIGHLIGHTS = [
 ];
 
 export default function Home() {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,6 +212,24 @@ export default function Home() {
   const [answerPanel, setAnswerPanel] = useState<AnswerPanelState | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addFiles = useCallback((incoming: FileList | File[]) => {
+    const pdfs = Array.from(incoming).filter(f => f.type === "application/pdf");
+    const rejected = Array.from(incoming).length - pdfs.length;
+    if (rejected > 0) setError(`${rejected} file(s) skipped — only PDF files are accepted.`);
+    else setError(null);
+    if (pdfs.length > 0) {
+      setFiles(prev => {
+        const existing = new Set(prev.map(f => f.name + f.size));
+        const fresh = pdfs.filter(f => !existing.has(f.name + f.size));
+        return [...prev, ...fresh];
+      });
+    }
+  }, []);
+
+  const removeFile = useCallback((index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -226,34 +244,23 @@ export default function Home() {
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped && dropped.type === "application/pdf") {
-      setFile(dropped);
-      setError(null);
-    } else {
-      setError("Please upload a valid PDF file.");
-    }
-  }, []);
+    addFiles(e.dataTransfer.files);
+  }, [addFiles]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0];
-    if (selected && selected.type === "application/pdf") {
-      setFile(selected);
-      setError(null);
-    } else {
-      setError("Please upload a valid PDF file.");
-    }
-  }, []);
+    if (e.target.files) addFiles(e.target.files);
+    e.target.value = "";
+  }, [addFiles]);
 
   const handleAnalyze = async () => {
-    if (!file) return;
+    if (files.length === 0) return;
     setIsAnalyzing(true);
     setError(null);
     setResult(null);
     setAnswerPanel(null);
 
     const formData = new FormData();
-    formData.append("file", file);
+    files.forEach(f => formData.append("file", f));
 
     try {
       const response = await fetch("/api/analyze", { method: "POST", body: formData });
@@ -263,7 +270,7 @@ export default function Home() {
           const body = await response.json();
           serverMessage = (body as { error?: string }).error;
         } catch {
-          // response body wasn't JSON — ignore
+          // not JSON — ignore
         }
         throw new Error(serverMessage || "Something went wrong. Try another PDF.");
       }
@@ -318,7 +325,7 @@ export default function Home() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ExamAce</h1>
           <p className="text-muted-foreground max-w-[520px] text-sm leading-relaxed">
-            Upload any exam PDF and get instant AI-powered analysis — repeated questions, priority topics, predicted questions, and model answers.
+            Upload one or more exam PDFs and get instant AI-powered analysis — repeated questions, priority topics, predicted questions, and model answers.
           </p>
         </header>
 
@@ -327,9 +334,11 @@ export default function Home() {
           <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-3 duration-500">
             <Card className="w-full border-dashed border-2 shadow-sm bg-card/50">
               <CardContent className="p-8 flex flex-col items-center justify-center gap-6">
+
+                {/* Drop zone */}
                 <div
                   data-testid="upload-dropzone"
-                  className={`w-full max-w-xl p-10 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-200 ${
+                  className={`w-full max-w-xl p-8 border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-200 ${
                     isDragging
                       ? "border-primary bg-primary/5 shadow-[0_0_24px_0_hsl(190,90%,50%,0.15)]"
                       : "border-muted-foreground/20 hover:border-primary/30 hover:bg-muted/40"
@@ -344,23 +353,47 @@ export default function Home() {
                     ref={fileInputRef}
                     onChange={handleFileChange}
                     accept="application/pdf"
+                    multiple
                     className="hidden"
                     data-testid="input-file"
                   />
-                  <div className="p-4 rounded-full bg-muted transition-colors group-hover:bg-muted/80">
+                  <div className="p-4 rounded-full bg-muted">
                     <Upload className={`w-8 h-8 transition-colors duration-200 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
                   </div>
                   <div className="text-center">
-                    <h3 className="text-lg font-medium">Click or drag PDF here</h3>
-                    <p className="text-sm text-muted-foreground mt-1">Accepts .pdf files only · max 20 MB</p>
+                    <h3 className="text-lg font-medium">Click or drag PDFs here</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Multiple files supported · PDF only · max 20 MB each</p>
                   </div>
-                  {file && (
-                    <div className="flex items-center gap-2 mt-2 px-4 py-2 bg-primary/10 text-primary rounded-md text-sm font-medium animate-in fade-in duration-200">
-                      <FileText className="w-4 h-4 shrink-0" />
-                      <span className="max-w-[220px] truncate" data-testid="text-filename">{file.name}</span>
-                    </div>
-                  )}
                 </div>
+
+                {/* File list */}
+                {files.length > 0 && (
+                  <div className="w-full max-w-xl flex flex-col gap-2 animate-in fade-in duration-200">
+                    {files.map((f, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/8 border border-primary/15 rounded-lg"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileText className="w-4 h-4 shrink-0 text-primary/70" />
+                          <span className="text-sm font-medium truncate text-primary/90" data-testid={`text-filename-${i}`}>
+                            {f.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {(f.size / 1024).toFixed(0)} KB
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeFile(i); }}
+                          className="shrink-0 p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                          aria-label={`Remove ${f.name}`}
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {error && (
                   <Alert variant="destructive" className="max-w-xl w-full animate-in fade-in duration-200">
@@ -373,13 +406,13 @@ export default function Home() {
                 <Button
                   data-testid="button-analyze"
                   onClick={(e) => { e.stopPropagation(); handleAnalyze(); }}
-                  disabled={!file || isAnalyzing}
+                  disabled={files.length === 0 || isAnalyzing}
                   className="w-full max-w-sm h-12 text-base font-medium transition-all hover:scale-[1.015] active:scale-[0.99]"
                 >
                   {isAnalyzing ? (
-                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Analyzing Document...</>
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" />Analyzing {files.length > 1 ? `${files.length} PDFs` : "Document"}...</>
                   ) : (
-                    "Analyze PDF"
+                    files.length > 1 ? `Analyze ${files.length} PDFs` : "Analyze PDF"
                   )}
                 </Button>
               </CardContent>
@@ -412,7 +445,7 @@ export default function Home() {
                 data-testid="button-analyze-another"
                 variant="outline"
                 size="sm"
-                onClick={() => { setResult(null); setFile(null); setAnswerPanel(null); }}
+                onClick={() => { setResult(null); setFiles([]); setAnswerPanel(null); }}
               >
                 Analyze Another
               </Button>
@@ -452,12 +485,10 @@ export default function Home() {
                             isTop={i === 0}
                             badge={
                               i === 0 ? (
-                                <div className="flex items-center gap-1.5">
-                                  <Badge className="text-xs font-bold border bg-primary/15 text-primary border-primary/25 px-2 py-0.5 gap-1">
-                                    <Trophy className="w-3 h-3" />
-                                    Top · {item.count}×
-                                  </Badge>
-                                </div>
+                                <Badge className="text-xs font-bold border bg-primary/15 text-primary border-primary/25 px-2 py-0.5 gap-1">
+                                  <Trophy className="w-3 h-3" />
+                                  Top · {item.count}×
+                                </Badge>
                               ) : (
                                 <Badge variant="secondary" className="text-xs font-semibold px-2 py-0.5">
                                   {item.count}×

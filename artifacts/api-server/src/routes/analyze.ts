@@ -28,6 +28,8 @@ const FALLBACK = { repeatedQuestions: [], importantTopics: [], expectedQuestions
 
 const ANALYSIS_PROMPT = `You are an expert exam analyst. Carefully read the exam paper content below and return a JSON object with exactly two fields.
 
+IMPORTANT: Return ONLY valid JSON. Do not include any explanation, text, or markdown. Your output MUST start with { and end with }.
+
 TASK 1 — repeatedQuestions:
 - Identify questions (or question themes) that appear more than once, or are clearly repeated across sections/years.
 - Group semantically similar questions together under a single representative phrasing.
@@ -65,6 +67,8 @@ const buildExpectedQuestionsPrompt = (
   importantTopics: Array<{ topic: string; priority: string }>
 ) => `You are a senior university exam paper setter with 20 years of experience.
 
+IMPORTANT: Return ONLY valid JSON. Do not include any explanation, text, or markdown. Your output MUST start with { and end with }.
+
 Based on the analysis below, predict 5 to 10 questions that are LIKELY to appear in the NEXT sitting of this exam.
 
 Repeated Questions (most frequent first):
@@ -85,8 +89,7 @@ Return ONLY a valid JSON object in this exact shape — no markdown, no extra te
 {
   "expectedQuestions": [
     "Explain the significance of X in the context of Y.",
-    "Compare and contrast A and B with suitable examples.",
-    "..."
+    "Compare and contrast A and B with suitable examples."
   ]
 }`;
 
@@ -101,35 +104,44 @@ async function callAI(prompt: string): Promise<string> {
   return block.text;
 }
 
-function extractJSON(raw: string): unknown {
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("No JSON object found in AI response");
-  return JSON.parse(match[0]);
+function safeExtractJSON(raw: string, label: string, log: (msg: string) => void): unknown {
+  log(`[${label}] Raw AI response (first 500 chars): ${raw.slice(0, 500)}${raw.length > 500 ? "…" : ""}`);
+
+  const first = raw.indexOf("{");
+  const last = raw.lastIndexOf("}");
+
+  if (first === -1 || last === -1 || last <= first) {
+    throw new Error(`[${label}] No valid JSON braces found in response`);
+  }
+
+  const slice = raw.slice(first, last + 1);
+  log(`[${label}] Extracted JSON slice (length=${slice.length})`);
+
+  return JSON.parse(slice);
 }
 
-async function callAIWithRetry(prompt: string, label: string, log: (msg: string, data?: unknown) => void): Promise<string | null> {
+async function callAIWithRetry(
+  prompt: string,
+  label: string,
+  log: (msg: string) => void,
+  logErr: (msg: string, err?: unknown) => void
+): Promise<string | null> {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
+      log(`[${label}] AI call attempt ${attempt}…`);
       const text = await callAI(prompt);
-      log(`[${label}] AI response (attempt ${attempt}), length=${text.length}`);
-      log(`[${label}] Raw AI response: ${text.slice(0, 500)}${text.length > 500 ? "…" : ""}`);
+      log(`[${label}] AI responded, length=${text.length} (attempt ${attempt})`);
       return text;
     } catch (err) {
-      log(`[${label}] AI call failed on attempt ${attempt}`, err);
+      logErr(`[${label}] AI call failed on attempt ${attempt}`, err);
       if (attempt === 2) return null;
     }
   }
   return null;
 }
 
-router.post("/api/analyze", upload.single("file"), async (req, res) => {
-  const log = (msg: string, data?: unknown) => {
-    if (data !== undefined) {
-      req.log.info({ data }, msg);
-    } else {
-      req.log.info(msg);
-    }
-  };
+router.post("/api/analyze", upload.array("file", 10), async (req, res) => {
+  const log = (msg: string) => req.log.info(msg);
   const logErr = (msg: string, err?: unknown) => {
     const stack = err instanceof Error ? err.stack : String(err);
     req.log.error({ err, stack }, msg);
@@ -137,48 +149,52 @@ router.post("/api/analyze", upload.single("file"), async (req, res) => {
 
   log("POST /api/analyze — request received");
 
-  if (!req.file) {
-    log("No file in request — returning 400");
-    res.status(400).json({ error: "No PDF file uploaded" });
+  const files = req.files as Express.Multer.File[] | undefined;
+  if (!files || files.length === 0) {
+    log("No files in request — returning 400");
+    res.status(400).json({ error: "No PDF files uploaded" });
     return;
   }
 
-  log(`File received: size=${req.file.size} bytes, mimetype=${req.file.mimetype}`);
+  log(`Files received: ${files.length} file(s), sizes=[${files.map(f => f.size).join(", ")}] bytes`);
 
-  // ── Step 1: Parse PDF ────────────────────────────────────────────────────
-  let pdfText: string;
-  try {
-    log("Starting PDF parsing…");
-    const parsed = await pdfParse(req.file.buffer);
-    pdfText = parsed.text ?? "";
-    log(`PDF parsed. Extracted text length: ${pdfText.length} characters (trimmed: ${pdfText.trim().length})`);
+  // ── Step 1: Parse all PDFs and combine text ────────────────────────────────
+  const textParts: string[] = [];
 
-    if (pdfText.trim().length < 100) {
-      log("PDF text too short (<100 chars) — treating as scanned/unreadable");
-      res.status(400).json({
-        error: "This PDF appears to be scanned or unreadable. Please upload a text-based PDF.",
-      });
-      return;
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    log(`Parsing PDF ${i + 1}/${files.length}: "${f.originalname}" (${f.size} bytes)…`);
+    try {
+      const parsed = await pdfParse(f.buffer);
+      const text: string = parsed.text ?? "";
+      log(`PDF ${i + 1} parsed. Extracted ${text.length} characters (trimmed: ${text.trim().length})`);
+      if (text.trim().length >= 100) {
+        textParts.push(text);
+      } else {
+        log(`PDF ${i + 1} too short (<100 chars) — skipping`);
+      }
+    } catch (err) {
+      logErr(`PDF ${i + 1} parsing threw an exception — skipping`, err);
     }
-  } catch (err) {
-    logErr("PDF parsing threw an exception", err);
-    res.status(400).json({ error: "Could not read PDF properly. Please upload a valid text-based PDF." });
+  }
+
+  if (textParts.length === 0) {
+    log("All PDFs were unreadable or too short — returning 400");
+    res.status(400).json({
+      error: "This PDF appears to be scanned or unreadable. Please upload a text-based PDF.",
+    });
     return;
   }
 
-  const truncatedText = pdfText.slice(0, 14000);
-  log(`Text truncated to ${truncatedText.length} characters for AI context`);
+  const combinedText = textParts.join("\n\n---\n\n").slice(0, 14000);
+  log(`Combined text: ${combinedText.length} characters from ${textParts.length} readable PDF(s)`);
 
-  // ── Step 2: Main analysis (repeated questions + important topics) ─────────
+  // ── Step 2: Main analysis (repeated questions + important topics) ──────────
   let repeatedQuestions: Array<{ question: string; count: number }> = [];
   let importantTopics: Array<{ topic: string; priority: string }> = [];
 
   log("Calling AI for main analysis (step 2)…");
-  const analysisRaw = await callAIWithRetry(
-    ANALYSIS_PROMPT + truncatedText,
-    "analysis",
-    log
-  );
+  const analysisRaw = await callAIWithRetry(ANALYSIS_PROMPT + combinedText, "analysis", log, logErr);
 
   if (analysisRaw === null) {
     logErr("Analysis AI call failed after 2 attempts — returning fallback");
@@ -187,22 +203,22 @@ router.post("/api/analyze", upload.single("file"), async (req, res) => {
   }
 
   try {
-    const parsed = extractJSON(analysisRaw) as {
+    const parsed = safeExtractJSON(analysisRaw, "analysis", log) as {
       repeatedQuestions?: unknown[];
       importantTopics?: unknown[];
     };
 
     if (!Array.isArray(parsed.repeatedQuestions) || !Array.isArray(parsed.importantTopics)) {
-      throw new Error("Response JSON missing required arrays");
+      throw new Error("Response JSON missing required arrays (repeatedQuestions or importantTopics)");
     }
 
     repeatedQuestions = (parsed.repeatedQuestions as Array<{ question: string; count: number }>)
-      .filter((q) => q.question && typeof q.count === "number")
+      .filter((q) => q && typeof q.question === "string" && typeof q.count === "number")
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
     importantTopics = (parsed.importantTopics as Array<{ topic: string; priority: string }>)
-      .filter((t) => t.topic && ["High", "Medium", "Low"].includes(t.priority));
+      .filter((t) => t && typeof t.topic === "string" && ["High", "Medium", "Low"].includes(t.priority));
 
     log(`Analysis parsed: ${repeatedQuestions.length} repeated questions, ${importantTopics.length} topics`);
   } catch (err) {
@@ -211,27 +227,30 @@ router.post("/api/analyze", upload.single("file"), async (req, res) => {
     return;
   }
 
-  // ── Step 3: Predicted questions (non-fatal — empty array on failure) ─────
+  // ── Step 3: Predicted questions (non-fatal — empty array on failure) ───────
   let expectedQuestions: string[] = [];
 
   if (repeatedQuestions.length > 0 || importantTopics.length > 0) {
+    log("Calling AI for expected questions (step 3)…");
     const expectedRaw = await callAIWithRetry(
       buildExpectedQuestionsPrompt(repeatedQuestions, importantTopics),
       "expected-questions",
-      log
+      log,
+      logErr
     );
 
     if (expectedRaw !== null) {
       try {
-        const parsed = extractJSON(expectedRaw) as { expectedQuestions?: unknown[] };
-        if (Array.isArray(parsed.expectedQuestions)) {
-          expectedQuestions = (parsed.expectedQuestions as unknown[])
-            .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
-            .slice(0, 10);
-          log(`Expected questions parsed: ${expectedQuestions.length} questions`);
-        } else {
+        const parsed = safeExtractJSON(expectedRaw, "expected-questions", log) as {
+          expectedQuestions?: unknown[];
+        };
+        if (!Array.isArray(parsed.expectedQuestions)) {
           throw new Error("expectedQuestions field is not an array");
         }
+        expectedQuestions = (parsed.expectedQuestions as unknown[])
+          .filter((q): q is string => typeof q === "string" && q.trim().length > 0)
+          .slice(0, 10);
+        log(`Expected questions parsed: ${expectedQuestions.length} questions`);
       } catch (err) {
         logErr("Failed to parse expected questions JSON — using empty array", err);
       }
@@ -239,10 +258,11 @@ router.post("/api/analyze", upload.single("file"), async (req, res) => {
       logErr("Expected questions AI call failed after 2 attempts — using empty array");
     }
   } else {
-    log("Skipping expected questions generation — no analysis data to base them on");
+    log("Skipping expected questions — no analysis data to base them on");
   }
 
-  // ── Always returns valid JSON ─────────────────────────────────────────────
+  // ── Always returns valid JSON ──────────────────────────────────────────────
+  log(`Returning result: ${repeatedQuestions.length} repeated, ${importantTopics.length} topics, ${expectedQuestions.length} expected`);
   res.json({ repeatedQuestions, importantTopics, expectedQuestions });
 });
 
