@@ -209,6 +209,51 @@ async function ocrPdf(
   }
 }
 
+async function generatePageImages(
+  pdfBuffer: Buffer,
+  fileName: string,
+  log: (msg: string) => void,
+  logErr: (msg: string, err?: unknown) => void
+): Promise<string[]> {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "examace-pages-"));
+  const pdfPath = path.join(tmpDir, "input.pdf");
+  const imgPrefix = path.join(tmpDir, "page");
+
+  try {
+    await fs.writeFile(pdfPath, pdfBuffer);
+    log(`[pages] Running pdftoppm on "${fileName}" (first 3 pages)…`);
+
+    await execFileAsync("pdftoppm", [
+      "-r", "130",
+      "-png",
+      "-l", "3",
+      pdfPath,
+      imgPrefix,
+    ]);
+
+    const entries = await fs.readdir(tmpDir);
+    const pngPaths = entries
+      .filter(f => f.endsWith(".png"))
+      .sort()
+      .slice(0, 3)
+      .map(f => path.join(tmpDir, f));
+
+    const dataUrls: string[] = [];
+    for (const p of pngPaths) {
+      const buf = await fs.readFile(p);
+      dataUrls.push(`data:image/png;base64,${buf.toString("base64")}`);
+    }
+
+    log(`[pages] Generated ${dataUrls.length} page image(s) for "${fileName}"`);
+    return dataUrls;
+  } catch (err) {
+    logErr(`[pages] Failed to generate page images for "${fileName}"`, err);
+    return [];
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 router.post("/analyze", upload.array("file", 10), async (req, res) => {
   const log = (msg: string) => req.log.info(msg);
   const logErr = (msg: string, err?: unknown) => {
@@ -345,9 +390,12 @@ router.post("/analyze", upload.array("file", 10), async (req, res) => {
     log("Skipping expected questions — no analysis data to base them on");
   }
 
+  // ── Step 4: Generate page images from first PDF (non-fatal) ──────────────
+  const pageImages = await generatePageImages(files[0].buffer, files[0].originalname, log, logErr);
+
   // ── Always returns valid JSON ──────────────────────────────────────────────
-  log(`Returning result: ${repeatedQuestions.length} repeated, ${importantTopics.length} topics, ${expectedQuestions.length} expected`);
-  res.json({ repeatedQuestions, importantTopics, expectedQuestions });
+  log(`Returning result: ${repeatedQuestions.length} repeated, ${importantTopics.length} topics, ${expectedQuestions.length} expected, ${pageImages.length} page images`);
+  res.json({ repeatedQuestions, importantTopics, expectedQuestions, pageImages });
 });
 
 export default router;
