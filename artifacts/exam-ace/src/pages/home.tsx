@@ -258,13 +258,19 @@ export default function Home() {
     try {
       const response = await fetch("/api/analyze", { method: "POST", body: formData });
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error || "Analysis failed. Please try again.");
+        let serverMessage: string | undefined;
+        try {
+          const body = await response.json();
+          serverMessage = (body as { error?: string }).error;
+        } catch {
+          // response body wasn't JSON — ignore
+        }
+        throw new Error(serverMessage || "Something went wrong. Try another PDF.");
       }
       const data: AnalysisResult = await response.json();
       setResult(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred.");
+      setError(err instanceof Error ? err.message : "Something went wrong. Try another PDF.");
     } finally {
       setIsAnalyzing(false);
     }

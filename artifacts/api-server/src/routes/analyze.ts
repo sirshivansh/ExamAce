@@ -130,23 +130,34 @@ router.post("/api/analyze", upload.single("file"), async (req, res) => {
       req.log.info(msg);
     }
   };
-  const logErr = (msg: string, err?: unknown) => req.log.error({ err }, msg);
+  const logErr = (msg: string, err?: unknown) => {
+    const stack = err instanceof Error ? err.stack : String(err);
+    req.log.error({ err, stack }, msg);
+  };
+
+  log("POST /api/analyze — request received");
 
   if (!req.file) {
+    log("No file in request — returning 400");
     res.status(400).json({ error: "No PDF file uploaded" });
     return;
   }
 
+  log(`File received: size=${req.file.size} bytes, mimetype=${req.file.mimetype}`);
+
   // ── Step 1: Parse PDF ────────────────────────────────────────────────────
   let pdfText: string;
   try {
+    log("Starting PDF parsing…");
     const parsed = await pdfParse(req.file.buffer);
     pdfText = parsed.text ?? "";
-    log(`PDF parsed successfully. Extracted text length: ${pdfText.length} characters`);
+    log(`PDF parsed. Extracted text length: ${pdfText.length} characters (trimmed: ${pdfText.trim().length})`);
 
-    if (pdfText.trim().length < 50) {
-      log("PDF text too short — treating as unreadable");
-      res.status(400).json({ error: "Could not read PDF properly. The file appears to be empty or image-based." });
+    if (pdfText.trim().length < 100) {
+      log("PDF text too short (<100 chars) — treating as scanned/unreadable");
+      res.status(400).json({
+        error: "This PDF appears to be scanned or unreadable. Please upload a text-based PDF.",
+      });
       return;
     }
   } catch (err) {
@@ -156,11 +167,13 @@ router.post("/api/analyze", upload.single("file"), async (req, res) => {
   }
 
   const truncatedText = pdfText.slice(0, 14000);
+  log(`Text truncated to ${truncatedText.length} characters for AI context`);
 
   // ── Step 2: Main analysis (repeated questions + important topics) ─────────
   let repeatedQuestions: Array<{ question: string; count: number }> = [];
   let importantTopics: Array<{ topic: string; priority: string }> = [];
 
+  log("Calling AI for main analysis (step 2)…");
   const analysisRaw = await callAIWithRetry(
     ANALYSIS_PROMPT + truncatedText,
     "analysis",
