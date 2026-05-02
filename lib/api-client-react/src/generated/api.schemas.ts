@@ -10,42 +10,36 @@ export interface HealthStatus {
 }
 
 export interface RepeatedQuestion {
-  /** The question text */
+  /** The grouped question text */
   question: string;
-  /** How many times this topic/question appeared */
-  frequency: number;
-  /** Years or contexts where this appeared */
-  years: string[];
+  /** Number of times this question or close variant appeared */
+  count: number;
 }
+
+/**
+ * Priority ranking based on frequency and relevance
+ */
+export type ImportantTopicPriority =
+  (typeof ImportantTopicPriority)[keyof typeof ImportantTopicPriority];
+
+export const ImportantTopicPriority = {
+  High: "High",
+  Medium: "Medium",
+  Low: "Low",
+} as const;
 
 export interface ImportantTopic {
   /** Topic name */
   topic: string;
-  /** Brief description of why it's important */
-  description: string;
-  /** Estimated weightage (High / Medium / Low) */
-  weightage: string;
-}
-
-export interface AnswerEntry {
-  /** The question */
-  question: string;
-  /** A concise model answer */
-  answer: string;
+  /** Priority ranking based on frequency and relevance */
+  priority: ImportantTopicPriority;
 }
 
 export interface AnalysisResult {
   repeatedQuestions: RepeatedQuestion[];
   importantTopics: ImportantTopic[];
-  answers: AnswerEntry[];
-  /** Brief overall summary of the exam paper */
-  summary: string;
 }
 
 export interface ErrorResponse {
   error: string;
 }
-
-export type GetAnalysisResultParams = {
-  id?: string;
-};

@@ -13,12 +13,7 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type {
-  AnalysisResult,
-  ErrorResponse,
-  GetAnalysisResultParams,
-  HealthStatus,
-} from "./api.schemas";
+import type { HealthStatus } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -97,103 +92,6 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
-
-  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
-    queryKey: QueryKey;
-  };
-
-  return { ...query, queryKey: queryOptions.queryKey };
-}
-
-/**
- * @summary Get a previously cached analysis result (placeholder)
- */
-export const getGetAnalysisResultUrl = (params?: GetAnalysisResultParams) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? "null" : value.toString());
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0
-    ? `/api/analyze/result?${stringifiedParams}`
-    : `/api/analyze/result`;
-};
-
-export const getAnalysisResult = async (
-  params?: GetAnalysisResultParams,
-  options?: RequestInit,
-): Promise<AnalysisResult> => {
-  return customFetch<AnalysisResult>(getGetAnalysisResultUrl(params), {
-    ...options,
-    method: "GET",
-  });
-};
-
-export const getGetAnalysisResultQueryKey = (
-  params?: GetAnalysisResultParams,
-) => {
-  return [`/api/analyze/result`, ...(params ? [params] : [])] as const;
-};
-
-export const getGetAnalysisResultQueryOptions = <
-  TData = Awaited<ReturnType<typeof getAnalysisResult>>,
-  TError = ErrorType<ErrorResponse>,
->(
-  params?: GetAnalysisResultParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getAnalysisResult>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-) => {
-  const { query: queryOptions, request: requestOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getGetAnalysisResultQueryKey(params);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof getAnalysisResult>>
-  > = ({ signal }) => getAnalysisResult(params, { signal, ...requestOptions });
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof getAnalysisResult>>,
-    TError,
-    TData
-  > & { queryKey: QueryKey };
-};
-
-export type GetAnalysisResultQueryResult = NonNullable<
-  Awaited<ReturnType<typeof getAnalysisResult>>
->;
-export type GetAnalysisResultQueryError = ErrorType<ErrorResponse>;
-
-/**
- * @summary Get a previously cached analysis result (placeholder)
- */
-
-export function useGetAnalysisResult<
-  TData = Awaited<ReturnType<typeof getAnalysisResult>>,
-  TError = ErrorType<ErrorResponse>,
->(
-  params?: GetAnalysisResultParams,
-  options?: {
-    query?: UseQueryOptions<
-      Awaited<ReturnType<typeof getAnalysisResult>>,
-      TError,
-      TData
-    >;
-    request?: SecondParameter<typeof customFetch>;
-  },
-): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetAnalysisResultQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

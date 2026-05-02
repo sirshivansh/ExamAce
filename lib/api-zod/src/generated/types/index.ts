@@ -7,9 +7,8 @@
  */
 
 export * from "./analysisResult";
-export * from "./answerEntry";
 export * from "./errorResponse";
-export * from "./getAnalysisResultParams";
 export * from "./healthStatus";
 export * from "./importantTopic";
+export * from "./importantTopicPriority";
 export * from "./repeatedQuestion";

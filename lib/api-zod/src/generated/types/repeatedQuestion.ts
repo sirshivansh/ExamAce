@@ -7,10 +7,8 @@
  */
 
 export interface RepeatedQuestion {
-  /** The question text */
+  /** The grouped question text */
   question: string;
-  /** How many times this topic/question appeared */
-  frequency: number;
-  /** Years or contexts where this appeared */
-  years: string[];
+  /** Number of times this question or close variant appeared */
+  count: number;
 }

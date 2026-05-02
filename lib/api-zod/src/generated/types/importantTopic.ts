@@ -5,12 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ImportantTopicPriority } from "./importantTopicPriority";
 
 export interface ImportantTopic {
   /** Topic name */
   topic: string;
-  /** Brief description of why it's important */
-  description: string;
-  /** Estimated weightage (High / Medium / Low) */
-  weightage: string;
+  /** Priority ranking based on frequency and relevance */
+  priority: ImportantTopicPriority;
 }
