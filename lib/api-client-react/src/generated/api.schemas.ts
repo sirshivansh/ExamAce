@@ -8,3 +8,44 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface RepeatedQuestion {
+  /** The question text */
+  question: string;
+  /** How many times this topic/question appeared */
+  frequency: number;
+  /** Years or contexts where this appeared */
+  years: string[];
+}
+
+export interface ImportantTopic {
+  /** Topic name */
+  topic: string;
+  /** Brief description of why it's important */
+  description: string;
+  /** Estimated weightage (High / Medium / Low) */
+  weightage: string;
+}
+
+export interface AnswerEntry {
+  /** The question */
+  question: string;
+  /** A concise model answer */
+  answer: string;
+}
+
+export interface AnalysisResult {
+  repeatedQuestions: RepeatedQuestion[];
+  importantTopics: ImportantTopic[];
+  answers: AnswerEntry[];
+  /** Brief overall summary of the exam paper */
+  summary: string;
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export type GetAnalysisResultParams = {
+  id?: string;
+};

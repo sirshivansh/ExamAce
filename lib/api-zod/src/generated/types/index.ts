@@ -6,4 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./analysisResult";
+export * from "./answerEntry";
+export * from "./errorResponse";
+export * from "./getAnalysisResultParams";
 export * from "./healthStatus";
+export * from "./importantTopic";
+export * from "./repeatedQuestion";

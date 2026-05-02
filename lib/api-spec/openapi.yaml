@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: analyze
+    description: PDF analysis operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /analyze/result:
+    get:
+      operationId: getAnalysisResult
+      tags: [analyze]
+      summary: Get a previously cached analysis result (placeholder)
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: string
+          required: false
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +59,79 @@ components:
           type: string
       required:
         - status
-
+    RepeatedQuestion:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The question text
+        frequency:
+          type: integer
+          description: How many times this topic/question appeared
+        years:
+          type: array
+          items:
+            type: string
+          description: Years or contexts where this appeared
+      required:
+        - question
+        - frequency
+        - years
+    ImportantTopic:
+      type: object
+      properties:
+        topic:
+          type: string
+          description: Topic name
+        description:
+          type: string
+          description: Brief description of why it's important
+        weightage:
+          type: string
+          description: Estimated weightage (High / Medium / Low)
+      required:
+        - topic
+        - description
+        - weightage
+    AnswerEntry:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The question
+        answer:
+          type: string
+          description: A concise model answer
+      required:
+        - question
+        - answer
+    AnalysisResult:
+      type: object
+      properties:
+        repeatedQuestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/RepeatedQuestion"
+        importantTopics:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportantTopic"
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnswerEntry"
+        summary:
+          type: string
+          description: Brief overall summary of the exam paper
+      required:
+        - repeatedQuestions
+        - importantTopics
+        - answers
+        - summary
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
