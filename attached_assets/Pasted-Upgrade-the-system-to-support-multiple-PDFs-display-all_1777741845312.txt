@@ -1,0 +1,95 @@
+Upgrade the system to support multiple PDFs, display all extracted questions, show their source page images, and visually highlight the selected question (approximate, stable approach).
+
+========================
+BACKEND
+========================
+
+1. Accept multiple PDF uploads
+
+2. For each PDF:
+- Extract text
+- Extract questions from text
+- Track approximate page number for each question
+- Also generate a short snippet (first 8–12 words of the question)
+
+3. Convert first 3–5 pages of each PDF into images (PNG)
+- Use a stable library like pdf2pic or pdf-poppler
+
+4. Return structured response:
+
+{
+  questions: [
+    {
+      question: string,
+      snippet: string,
+      source: {
+        fileName: string,
+        page: number
+      }
+    }
+  ],
+  pageImages: {
+    [fileName]: string[]
+  }
+}
+
+5. Ensure:
+- System never crashes
+- If one PDF fails, continue processing others
+- Always return valid JSON
+
+========================
+FRONTEND
+========================
+
+1. Allow multiple PDF upload
+- Show selected file names
+
+2. Merge all extracted questions into one list
+
+3. Display each question with:
+- Question text
+- File name
+- Page number
+
+4. When user clicks a question:
+Show split view:
+
+LEFT PANEL:
+- Display corresponding page image:
+  pageImages[fileName][page]
+
+RIGHT PANEL:
+- Show generated answer using existing /api/generate-answer
+
+5. Add label:
+"From: filename — Page X"
+
+========================
+HIGHLIGHT FEATURE (IMPORTANT)
+========================
+
+6. Add visual highlight overlay on page image:
+
+- Use the snippet text to approximate position
+- Try simple text matching if possible
+- If match not found:
+  → show highlight box near top or center
+
+7. Highlight style:
+- Semi-transparent yellow overlay
+- Slight glow
+- Smooth fade-in animation
+
+8. Add label:
+"Highlighted question (approximate)"
+
+========================
+IMPORTANT CONSTRAINTS
+========================
+
+- DO NOT attempt precise bounding box detection
+- DO NOT use heavy computer vision
+- Keep highlight approximate but visually convincing
+- Keep UI fast and clean
+- Do not break existing analysis or answer features
