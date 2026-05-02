@@ -8,9 +8,29 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
+});
+
+/**
+ * @summary Generate a structured exam answer for a question
+ */
+export const GenerateAnswerBody = zod.object({
+  question: zod
+    .string()
+    .describe("The exam question to generate an answer for"),
+});
+
+export const GenerateAnswerResponse = zod.object({
+  answer: zod.object({
+    definition: zod.string().describe("A clear one or two sentence definition"),
+    explanation: zod.array(zod.string()).describe("Bullet point explanations"),
+    example: zod
+      .string()
+      .optional()
+      .describe("Optional real-world or conceptual example"),
+    conclusion: zod.string().describe("A concise closing statement"),
+  }),
 });

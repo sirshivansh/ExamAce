@@ -10,15 +10,10 @@ export interface HealthStatus {
 }
 
 export interface RepeatedQuestion {
-  /** The grouped question text */
   question: string;
-  /** Number of times this question or close variant appeared */
   count: number;
 }
 
-/**
- * Priority ranking based on frequency and relevance
- */
 export type ImportantTopicPriority =
   (typeof ImportantTopicPriority)[keyof typeof ImportantTopicPriority];
 
@@ -29,15 +24,33 @@ export const ImportantTopicPriority = {
 } as const;
 
 export interface ImportantTopic {
-  /** Topic name */
   topic: string;
-  /** Priority ranking based on frequency and relevance */
   priority: ImportantTopicPriority;
 }
 
 export interface AnalysisResult {
   repeatedQuestions: RepeatedQuestion[];
   importantTopics: ImportantTopic[];
+}
+
+export interface GenerateAnswerBody {
+  /** The exam question to generate an answer for */
+  question: string;
+}
+
+export interface AnswerDetail {
+  /** A clear one or two sentence definition */
+  definition: string;
+  /** Bullet point explanations */
+  explanation: string[];
+  /** Optional real-world or conceptual example */
+  example?: string;
+  /** A concise closing statement */
+  conclusion: string;
+}
+
+export interface GenerateAnswerResult {
+  answer: AnswerDetail;
 }
 
 export interface ErrorResponse {

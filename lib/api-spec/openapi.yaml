@@ -12,13 +12,14 @@ tags:
     description: Health operations
   - name: analyze
     description: PDF analysis operations
+  - name: answer
+    description: Answer generation operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -26,6 +27,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /generate-answer:
+    post:
+      operationId: generateAnswer
+      tags: [answer]
+      summary: Generate a structured exam answer for a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateAnswerBody"
+      responses:
+        "200":
+          description: Structured answer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateAnswerResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -40,10 +71,8 @@ components:
       properties:
         question:
           type: string
-          description: The grouped question text
         count:
           type: integer
-          description: Number of times this question or close variant appeared
       required:
         - question
         - count
@@ -52,11 +81,9 @@ components:
       properties:
         topic:
           type: string
-          description: Topic name
         priority:
           type: string
           enum: [High, Medium, Low]
-          description: Priority ranking based on frequency and relevance
       required:
         - topic
         - priority
@@ -74,6 +101,42 @@ components:
       required:
         - repeatedQuestions
         - importantTopics
+    GenerateAnswerBody:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The exam question to generate an answer for
+      required:
+        - question
+    AnswerDetail:
+      type: object
+      properties:
+        definition:
+          type: string
+          description: A clear one or two sentence definition
+        explanation:
+          type: array
+          items:
+            type: string
+          description: Bullet point explanations
+        example:
+          type: string
+          description: Optional real-world or conceptual example
+        conclusion:
+          type: string
+          description: A concise closing statement
+      required:
+        - definition
+        - explanation
+        - conclusion
+    GenerateAnswerResult:
+      type: object
+      properties:
+        answer:
+          $ref: "#/components/schemas/AnswerDetail"
+      required:
+        - answer
     ErrorResponse:
       type: object
       properties:
