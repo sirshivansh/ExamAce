@@ -1,9 +1,16 @@
 import { Router } from "express";
 import multer from "multer";
 import { createRequire } from "module";
+import os from "os";
+import path from "path";
+import fs from "fs/promises";
+import { execFile } from "child_process";
+import { promisify } from "util";
 const require = createRequire(import.meta.url);
 const pdfParse = require("pdf-parse");
 import Anthropic from "@anthropic-ai/sdk";
+
+const execFileAsync = promisify(execFile);
 
 const router = Router();
 
@@ -140,6 +147,68 @@ async function callAIWithRetry(
   return null;
 }
 
+async function ocrPdf(
+  pdfBuffer: Buffer,
+  fileName: string,
+  log: (msg: string) => void,
+  logErr: (msg: string, err?: unknown) => void
+): Promise<string | null> {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "examace-ocr-"));
+  const pdfPath = path.join(tmpDir, "input.pdf");
+  const imgPrefix = path.join(tmpDir, "page");
+
+  try {
+    log(`[OCR] Writing PDF to temp: ${pdfPath}`);
+    await fs.writeFile(pdfPath, pdfBuffer);
+
+    log(`[OCR] Running pdftoppm on "${fileName}"…`);
+    await execFileAsync("pdftoppm", [
+      "-r", "200",
+      "-png",
+      "-l", "10",
+      pdfPath,
+      imgPrefix,
+    ]);
+
+    const tmpFiles = await fs.readdir(tmpDir);
+    const pngFiles = tmpFiles
+      .filter(f => f.endsWith(".png"))
+      .sort()
+      .map(f => path.join(tmpDir, f));
+
+    if (pngFiles.length === 0) {
+      log(`[OCR] pdftoppm produced no PNG files for "${fileName}"`);
+      return null;
+    }
+
+    log(`[OCR] ${pngFiles.length} page image(s) generated for "${fileName}"`);
+
+    const { createWorker } = await import("tesseract.js");
+    const worker = await createWorker("eng", 1, {
+      logger: () => {},
+    });
+
+    const pageTexts: string[] = [];
+    for (let i = 0; i < pngFiles.length; i++) {
+      log(`[OCR] Recognising page ${i + 1}/${pngFiles.length}…`);
+      const imgBuf = await fs.readFile(pngFiles[i]);
+      const { data } = await worker.recognize(imgBuf);
+      pageTexts.push(data.text);
+    }
+
+    await worker.terminate();
+
+    const combined = pageTexts.join("\n\n");
+    log(`[OCR] Finished "${fileName}" — OCR text length: ${combined.length}`);
+    return combined;
+  } catch (err) {
+    logErr(`[OCR] Failed for "${fileName}"`, err);
+    return null;
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 router.post("/analyze", upload.array("file", 10), async (req, res) => {
   const log = (msg: string) => req.log.info(msg);
   const logErr = (msg: string, err?: unknown) => {
@@ -158,30 +227,45 @@ router.post("/analyze", upload.array("file", 10), async (req, res) => {
 
   log(`Files received: ${files.length} file(s), sizes=[${files.map(f => f.size).join(", ")}] bytes`);
 
-  // ── Step 1: Parse all PDFs and combine text ────────────────────────────────
+  // ── Step 1: Parse all PDFs (with OCR fallback for scanned pages) ──────────
   const textParts: string[] = [];
 
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
     log(`Parsing PDF ${i + 1}/${files.length}: "${f.originalname}" (${f.size} bytes)…`);
+
+    let text = "";
+
     try {
       const parsed = await pdfParse(f.buffer);
-      const text: string = parsed.text ?? "";
-      log(`PDF ${i + 1} parsed. Extracted ${text.length} characters (trimmed: ${text.trim().length})`);
-      if (text.trim().length >= 100) {
-        textParts.push(text);
-      } else {
-        log(`PDF ${i + 1} too short (<100 chars) — skipping`);
-      }
+      text = parsed.text ?? "";
+      log(`PDF ${i + 1} parsed. Extracted ${text.length} chars (trimmed: ${text.trim().length})`);
     } catch (err) {
-      logErr(`PDF ${i + 1} parsing threw an exception — skipping`, err);
+      logErr(`PDF ${i + 1} pdf-parse threw — will attempt OCR fallback`, err);
     }
+
+    if (text.trim().length < 100) {
+      log(`PDF ${i + 1} text too short (<100 chars) — assuming scanned PDF, using OCR fallback`);
+      log(`Using OCR fallback for "${f.originalname}"`);
+
+      const ocrText = await ocrPdf(f.buffer, f.originalname, log, logErr);
+
+      if (ocrText && ocrText.trim().length >= 100) {
+        log(`OCR text length: ${ocrText.length} chars for "${f.originalname}"`);
+        text = ocrText;
+      } else {
+        log(`OCR also failed or too short for "${f.originalname}" — skipping`);
+        continue;
+      }
+    }
+
+    textParts.push(text);
   }
 
   if (textParts.length === 0) {
-    log("All PDFs were unreadable or too short — returning 400");
+    log("All PDFs were unreadable (including OCR) — returning 400");
     res.status(400).json({
-      error: "This PDF appears to be scanned or unreadable. Please upload a text-based PDF.",
+      error: "Could not read this PDF. Try a clearer file.",
     });
     return;
   }
