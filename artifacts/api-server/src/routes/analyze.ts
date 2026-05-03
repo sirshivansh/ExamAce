@@ -7,8 +7,9 @@ import fs from "fs/promises";
 import { execFile } from "child_process";
 import { promisify } from "util";
 const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse");
-import Anthropic from "@anthropic-ai/sdk";
+const _pdfParse = require("pdf-parse");
+const pdfParse = _pdfParse.default || _pdfParse;
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const execFileAsync = promisify(execFile);
 const router = Router();
@@ -22,10 +23,28 @@ const upload = multer({
   },
 });
 
-const anthropic = new Anthropic({
-  baseURL: process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY,
-});
+let _genAI: GoogleGenerativeAI;
+let _model: any;
+
+function getAI() {
+  if (!_model) {
+    const key = process.env.GEMINI_API_KEY || "";
+    if (!key) console.warn("DEBUG: GEMINI_API_KEY is EMPTY in getAI()");
+    else console.log("DEBUG: GEMINI_API_KEY is present, starting with:", key.substring(0, 8));
+
+    _genAI = new GoogleGenerativeAI(key);
+    _model = _genAI.getGenerativeModel({ 
+      model: "gemini-2.5-flash",
+      safetySettings: [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      ]
+    });
+  }
+  return _model;
+}
 
 const FALLBACK = { repeatedQuestions: [], importantTopics: [], expectedQuestions: [], questions: [], pageImages: {} };
 
@@ -135,15 +154,48 @@ Return ONLY:
 { "expectedQuestions": ["...", "..."] }`;
 
 // ── AI helpers ────────────────────────────────────────────────────────────────
-async function callAI(prompt: string): Promise<string> {
-  const msg = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 8192,
-    messages: [{ role: "user", content: prompt }],
-  });
-  const block = msg.content[0];
-  if (block.type !== "text") throw new Error("Unexpected AI response block type: " + block.type);
-  return block.text;
+async function callAI(prompt: string, pdfBuffer?: Buffer): Promise<string> {
+  const parts: any[] = [{ text: prompt }];
+  
+  if (pdfBuffer) {
+    parts.push({
+      inlineData: {
+        mimeType: "application/pdf",
+        data: pdfBuffer.toString("base64"),
+      },
+    });
+  }
+
+  try {
+    const model = getAI();
+    const result = await model.generateContent(parts);
+    const response = await result.response;
+    return response.text();
+  } catch (err: any) {
+    console.error("--- ANALYZE AI ERROR ---");
+    console.error("Message:", err.message);
+    if (err.status) console.error("Status:", err.status);
+    console.error("-------------------------");
+    throw err;
+  }
+}
+
+// ── OCR fallback using AI ─────────────────────────────────────────────────────
+async function ocrPdf(
+  pdfBuffer: Buffer,
+  fileName: string,
+  log: (m: string) => void,
+  logErr: (m: string, e?: unknown) => void
+): Promise<string | null> {
+  try {
+    log(`[AI-OCR] Sending "${fileName}" to Claude for text extraction…`);
+    const text = await callAI("Please extract all the text content from this exam paper PDF accurately. Return ONLY the text, no conversational filler.", pdfBuffer);
+    log(`[AI-OCR] Extracted ${text.length} chars from "${fileName}"`);
+    return text;
+  } catch (err) {
+    logErr(`[AI-OCR] Failed for "${fileName}"`, err);
+    return null;
+  }
 }
 
 function safeExtractJSON(raw: string, label: string, log: (m: string) => void): unknown {
@@ -172,43 +224,6 @@ async function callAIWithRetry(
     }
   }
   return null;
-}
-
-// ── OCR fallback ──────────────────────────────────────────────────────────────
-async function ocrPdf(
-  pdfBuffer: Buffer,
-  fileName: string,
-  log: (m: string) => void,
-  logErr: (m: string, e?: unknown) => void
-): Promise<string | null> {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "examace-ocr-"));
-  const pdfPath = path.join(tmpDir, "input.pdf");
-  const imgPrefix = path.join(tmpDir, "page");
-  try {
-    await fs.writeFile(pdfPath, pdfBuffer);
-    log(`[OCR] Running pdftoppm on "${fileName}"…`);
-    await execFileAsync("pdftoppm", ["-r", "200", "-png", "-l", "10", pdfPath, imgPrefix]);
-    const files = (await fs.readdir(tmpDir)).filter(f => f.endsWith(".png")).sort().map(f => path.join(tmpDir, f));
-    if (files.length === 0) { log(`[OCR] No PNGs for "${fileName}"`); return null; }
-    log(`[OCR] ${files.length} pages for "${fileName}"`);
-    const { createWorker } = await import("tesseract.js");
-    const worker = await createWorker("eng", 1, { logger: () => {} });
-    const texts: string[] = [];
-    for (let i = 0; i < files.length; i++) {
-      log(`[OCR] Recognising page ${i + 1}/${files.length}…`);
-      const { data } = await worker.recognize(await fs.readFile(files[i]));
-      texts.push(data.text);
-    }
-    await worker.terminate();
-    const combined = texts.join("\n\n");
-    log(`[OCR] OCR text length: ${combined.length} for "${fileName}"`);
-    return combined;
-  } catch (err) {
-    logErr(`[OCR] Failed for "${fileName}"`, err);
-    return null;
-  } finally {
-    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
-  }
 }
 
 // ── Page image generation ─────────────────────────────────────────────────────

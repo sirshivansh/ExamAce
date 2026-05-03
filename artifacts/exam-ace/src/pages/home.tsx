@@ -70,12 +70,12 @@ function ClickableQuestion({
     <button
       onClick={onClick}
       style={{ animationDelay: `${index * 40}ms` }}
-      className={`stagger-item w-full text-left group rounded-xl border px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all duration-200 ${
+      className={`stagger-item w-full text-left group rounded-2xl border px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all duration-300 backdrop-blur-md ${
         isTop
           ? "top-question"
           : isActive
-          ? "border-primary/50 bg-primary/[0.07] shadow-[0_0_0_1px_hsl(var(--primary)/0.4),0_0_16px_hsl(var(--primary)/0.12)]"
-          : "border-border/60 bg-card/60 hover:border-primary/30 hover:bg-muted/30"
+          ? "border-primary/40 bg-primary/10 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.2)]"
+          : "border-border/60 bg-card/40 hover:border-primary/30 hover:bg-card/80 hover:shadow-sm"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -100,10 +100,10 @@ function ExtractedQuestionCard({
     <button
       onClick={onClick}
       style={{ animationDelay: `${index * 35}ms` }}
-      className={`stagger-item w-full text-left group rounded-xl border px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all duration-200 ${
+      className={`stagger-item w-full text-left group rounded-2xl border px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all duration-300 backdrop-blur-md ${
         isActive
-          ? "border-primary/50 bg-primary/[0.07] shadow-[0_0_0_1px_hsl(var(--primary)/0.4),0_0_16px_hsl(var(--primary)/0.12)]"
-          : "border-border/60 bg-card/60 hover:border-primary/30 hover:bg-muted/30"
+          ? "border-primary/40 bg-primary/10 shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.2)]"
+          : "border-border/60 bg-card/40 hover:border-primary/30 hover:bg-card/80 hover:shadow-sm"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -149,9 +149,9 @@ function PdfPageViewer({
   const src = images[pageIdx];
 
   return (
-    <div className="rounded-2xl border border-border/80 bg-card overflow-hidden sticky top-6 flex flex-col animate-in fade-in slide-in-from-left-4 duration-300">
+    <div className="rounded-[2rem] border-2 border-foreground/10 bg-card shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden sticky top-6 flex flex-col animate-in fade-in slide-in-from-left-4 duration-500">
       {/* Header */}
-      <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border/60 bg-muted/20 shrink-0">
+      <div className="flex items-center justify-between gap-2 px-6 py-5 border-b-2 border-foreground/5 bg-muted/30 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-5 h-5 rounded bg-primary/15 flex items-center justify-center shrink-0">
             <FileText className="w-3 h-3 text-primary" />
@@ -265,10 +265,10 @@ function AnswerPanel({ state, onClose }: { state: AnswerPanelState; onClose: () 
   return (
     <div
       data-testid="panel-answer"
-      className="rounded-2xl border border-border/80 bg-card shadow-xl animate-in fade-in slide-in-from-right-4 duration-300 overflow-hidden sticky top-6"
+      className="rounded-[2rem] border-2 border-foreground/10 bg-card shadow-[8px_8px_0px_0px_rgba(0,0,0,0.05)] animate-in fade-in slide-in-from-right-4 duration-500 overflow-hidden sticky top-6"
     >
       {/* Question header */}
-      <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border/60 bg-gradient-to-r from-primary/5 to-transparent">
+      <div className="flex items-start justify-between gap-3 px-6 py-5 border-b-2 border-foreground/5 bg-primary/10">
         <div className="flex items-start gap-2.5 flex-1 min-w-0">
           <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
             <Zap className="w-3 h-3 text-primary" />
@@ -377,8 +377,8 @@ function AnswerSection({ icon, label, colorClass, children }: {
 
 function AnswerPlaceholder({ hasImages }: { hasImages: boolean }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border/50 bg-card/30 flex flex-col items-center justify-center gap-5 py-16 px-6 text-center animate-in fade-in duration-500 sticky top-6">
-      <div className="w-12 h-12 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center">
+    <div className="rounded-[2rem] border-2 border-dashed border-foreground/20 bg-muted/20 flex flex-col items-center justify-center gap-5 py-24 px-6 text-center animate-in fade-in duration-500 sticky top-6">
+      <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center text-primary shadow-sm">
         <MousePointerClick className="w-5 h-5 text-primary/50" />
       </div>
       <div className="flex flex-col gap-1.5">
@@ -434,7 +434,7 @@ function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
-      className="fixed top-4 right-4 z-50 w-9 h-9 rounded-full flex items-center justify-center border border-border/70 bg-card/90 backdrop-blur-sm hover:bg-muted shadow-sm hover:shadow-md transition-shadow duration-200"
+      className="fixed top-6 right-6 z-50 w-12 h-12 rounded-full flex items-center justify-center border-2 border-foreground/10 bg-card text-foreground hover:bg-muted shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] hover:-translate-y-0.5 transition-all duration-300"
     >
       <span className={spinning ? "theme-toggle-spin" : ""}>
         {isLight
@@ -446,18 +446,53 @@ function ThemeToggle() {
   );
 }
 
+function DocsButton() {
+  return (
+    <a
+      href="/docs.html"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="View Documentation"
+      className="fixed top-6 right-[80px] z-50 w-12 h-12 rounded-full flex items-center justify-center border-2 border-foreground/10 bg-card text-foreground hover:bg-muted shadow-[4px_4px_0px_0px_rgba(0,0,0,0.05)] hover:-translate-y-0.5 transition-all duration-300"
+    >
+      <BookOpen className="w-4 h-4 text-primary" />
+    </a>
+  );
+}
+
 const FEATURE_HIGHLIGHTS = [
-  { icon: Repeat2, label: "Repeated Questions", desc: "Groups similar questions and ranks by frequency", color: "text-sky-400", bg: "bg-sky-400/10" },
-  { icon: BarChart2, label: "Priority Topics", desc: "Identifies High / Medium / Low priority topics", color: "text-violet-400", bg: "bg-violet-400/10" },
-  { icon: Sparkles, label: "Predicted Questions", desc: "AI forecasts likely questions for your next exam", color: "text-amber-400", bg: "bg-amber-400/10" },
-  { icon: Brain, label: "Model Answers", desc: "Generates structured 10-mark answers on demand", color: "text-emerald-400", bg: "bg-emerald-400/10" },
+  { icon: Repeat2, label: "Repeated Questions", desc: "Groups similar questions and ranks by frequency", color: "text-orange-500", bg: "bg-orange-500/10 border-orange-500/20" },
+  { icon: BarChart2, label: "Priority Topics", desc: "Identifies High / Medium / Low priority topics", color: "text-rose-500", bg: "bg-rose-500/10 border-rose-500/20" },
+  { icon: Sparkles, label: "Predicted Questions", desc: "AI forecasts likely questions for your next exam", color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+  { icon: Brain, label: "Model Answers", desc: "Generates structured 10-mark answers on demand", color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
 ];
+
+// ── Intersection Observer Hook ────────────────────────────────────────────────
+function useInView(options = {}) {
+  const [isIntersecting, setIntersecting] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setIntersecting(true);
+        observer.disconnect();
+      }
+    }, options);
+    
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [options]);
+
+  return [ref, isIntersecting] as const;
+}
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [contentRef, isIntersecting] = useInView({ threshold: 0.15 });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -553,38 +588,60 @@ export default function Home() {
   const showSplitView = !!answerPanel && viewerImages.length > 0;
 
   return (
-    <div className="min-h-[100dvh] w-full flex flex-col items-center bg-background overflow-x-hidden">
+    <div className="min-h-[100dvh] w-full flex flex-col items-center bg-background overflow-x-hidden selection:bg-primary/30 selection:text-foreground font-sans relative">
 
       <ThemeToggle />
+      <DocsButton />
 
-      {/* Ambient glow */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 -left-40 w-[300px] h-[400px] bg-violet-500/3 rounded-full blur-[80px]" />
+      {/* Decorative Blob Shapes (Agency Style) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-100 mix-blend-normal">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-secondary rounded-[40%_60%_70%_30%/40%_50%_60%_50%] shadow-[inset_-10px_-10px_20px_rgba(0,0,0,0.1),_4px_4px_10px_rgba(0,0,0,0.05)] animate-pulse" style={{ animationDuration: '6s' }} />
+        <div className="absolute bottom-20 right-10 w-48 h-48 bg-primary rounded-[60%_40%_30%_70%/60%_30%_70%_40%] shadow-[inset_-10px_-10px_20px_rgba(0,0,0,0.1),_4px_4px_10px_rgba(0,0,0,0.05)] animate-pulse" style={{ animationDuration: '8s', animationDelay: '2s' }} />
+        <div className="absolute top-1/2 -right-10 w-24 h-24 bg-accent rounded-full shadow-[inset_-5px_-5px_15px_rgba(0,0,0,0.1),_4px_4px_10px_rgba(0,0,0,0.05)] animate-pulse" style={{ animationDuration: '7s' }} />
       </div>
 
-      <div className={`relative w-full flex flex-col gap-10 py-12 px-4 md:px-8 transition-all duration-500 ${showSplitView ? "max-w-[1400px]" : "max-w-4xl"}`}>
+      <div className="relative z-10 w-full flex flex-col items-center">
 
-        {/* Header */}
-        <header className="flex flex-col items-center text-center gap-4 animate-in fade-in slide-in-from-top-3 duration-500">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
-            <GraduationCap className="w-3.5 h-3.5" />
-            AI-Powered Exam Analysis
+        {/* Hero Section */}
+        <section className="min-h-[80vh] w-full max-w-5xl px-4 md:px-8 flex flex-col justify-center items-center relative pt-10">
+          <header className="flex flex-col items-center text-center gap-8 animate-in fade-in slide-in-from-top-8 duration-700 ease-out z-10 relative">
+            <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/20 border-2 border-primary/30 text-sm font-bold text-foreground">
+              <GraduationCap className="w-5 h-5 text-primary" />
+              <span className="tracking-widest uppercase">AI-Powered Exam Analysis</span>
+            </div>
+            
+            <div className="flex flex-col gap-4 max-w-4xl relative z-10 px-4">
+              <h1 className="text-5xl md:text-7xl lg:text-[6rem] font-black uppercase tracking-tighter text-foreground leading-[0.9]">
+                Insights that<br />
+                <span className="text-secondary inline-block transform -rotate-2 origin-left mx-2">elevate</span> your scores.
+              </h1>
+              <p className="text-foreground/70 max-w-[600px] mx-auto text-lg md:text-xl leading-relaxed font-medium mt-6">
+                Upload exam PDFs and get instant AI-powered insights — repeated questions, priority topics, predicted questions, and model answers.
+              </p>
+            </div>
+          </header>
+        </section>
+
+        {/* Content Section with a clean, smooth reveal */}
+        <div 
+          ref={contentRef} 
+          className={`w-full flex flex-col items-center transition-all duration-[1000ms] ease-out ${isIntersecting || result ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10 pointer-events-none"}`}
+        >
+          
+          {/* Scrolling Marquee - Straight and clean for a 'put together' look */}
+          <div className="w-full bg-primary text-primary-foreground py-6 border-y-2 border-foreground/10 overflow-hidden flex whitespace-nowrap mt-12 mb-8 z-20 shadow-md">
+            <div className="animate-marquee flex gap-10 items-center text-xl font-bold uppercase tracking-widest">
+              {Array(10).fill("• UPLOAD PDFS • REPEATED QUESTIONS • MODEL ANSWERS • AI PREDICTIONS").map((text, i) => (
+                <span key={i} className="inline-block px-4">{text}</span>
+              ))}
+            </div>
           </div>
-          <div className="relative flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 shadow-[0_0_40px_hsl(var(--primary)/0.15)]">
-            <BookOpen className="w-7 h-7 text-primary" />
-          </div>
-          <div className="flex flex-col gap-2">
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">ExamAce</h1>
-            <p className="text-muted-foreground max-w-[480px] text-sm leading-relaxed">
-              Upload exam PDFs and get instant AI-powered insights — repeated questions, priority topics, predicted questions, and model answers.
-            </p>
-          </div>
-        </header>
+
+          <div className={`relative w-full flex flex-col gap-10 pb-20 pt-8 px-4 md:px-8 ${showSplitView ? "max-w-[1500px]" : "max-w-5xl"}`}>
 
         {/* ── Upload ── */}
         {!result && (
-          <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-3 duration-500">
+          <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-3 duration-500">
             <div
               data-testid="upload-dropzone"
               className={`relative w-full rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-200 overflow-hidden ${
@@ -597,13 +654,13 @@ export default function Home() {
             >
               {isDragging && <div className="absolute inset-0 bg-primary/5 animate-pulse" />}
               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="application/pdf" multiple className="hidden" data-testid="input-file" />
-              <div className="flex flex-col items-center justify-center gap-4 py-12 px-6">
-                <div className={`p-4 rounded-2xl border transition-all duration-200 ${isDragging ? "bg-primary/20 border-primary/40" : "bg-muted/60 border-border/40"}`}>
-                  <Upload className={`w-7 h-7 transition-colors duration-200 ${isDragging ? "text-primary" : "text-muted-foreground/60"}`} />
+              <div className="flex flex-col items-center justify-center gap-4 py-10 px-6">
+                <div className={`p-5 rounded-full border-2 transition-all duration-300 ${isDragging ? "bg-primary border-primary text-foreground scale-110 shadow-[4px_4px_0px_rgba(0,0,0,0.1)]" : "bg-card border-foreground/10 text-foreground/50 shadow-sm"}`}>
+                  <Upload className="w-8 h-8" />
                 </div>
-                <div className="text-center">
-                  <p className="text-base font-semibold text-foreground">{isDragging ? "Drop your PDFs here" : "Click or drag PDFs here"}</p>
-                  <p className="text-sm text-muted-foreground/70 mt-1">Multiple files supported · PDF only · max 20 MB each</p>
+                <div className="text-center mt-1">
+                  <p className="text-xl font-bold text-foreground tracking-tight">{isDragging ? "Drop your PDFs here" : "Click or drag PDFs here"}</p>
+                  <p className="text-xs text-foreground/60 mt-1.5 font-medium uppercase tracking-wider">Max 20 MB each</p>
                 </div>
               </div>
             </div>
@@ -645,26 +702,27 @@ export default function Home() {
               data-testid="button-analyze"
               onClick={(e) => { e.stopPropagation(); handleAnalyze(); }}
               disabled={files.length === 0 || isAnalyzing}
-              className={`relative w-full h-13 rounded-xl text-sm font-semibold transition-all duration-200 overflow-hidden group ${
-                files.length === 0 || isAnalyzing ? "bg-muted text-muted-foreground cursor-not-allowed" : "bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.99] shadow-[0_0_30px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.4)]"
+              className={`relative w-full h-16 rounded-full text-lg font-bold transition-all duration-300 overflow-hidden group border-2 border-transparent uppercase tracking-wider ${
+                files.length === 0 || isAnalyzing 
+                ? "bg-muted text-foreground/40 cursor-not-allowed" 
+                : "bg-primary text-foreground hover:-translate-y-1 active:translate-y-0 shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_24px_-4px_rgba(0,0,0,0.3)]"
               }`}
             >
-              {files.length > 0 && !isAnalyzing && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />}
-              <span className="relative flex items-center justify-center gap-2.5 py-3.5">
+              <span className="relative flex items-center justify-center gap-3 h-full">
                 {isAnalyzing
-                  ? <><Loader2 className="w-4 h-4 animate-spin" />Analyzing {files.length > 1 ? `${files.length} PDFs` : "document"}…</>
-                  : <><Zap className="w-4 h-4" />{files.length > 1 ? `Analyze ${files.length} PDFs` : "Analyze PDF"}{files.length > 0 && <ArrowRight className="w-4 h-4" />}</>
+                  ? <><Loader2 className="w-6 h-6 animate-spin" />Analyzing {files.length > 1 ? `${files.length} PDFs` : "document"}…</>
+                  : <><Zap className="w-6 h-6" />{files.length > 1 ? `Analyze ${files.length} PDFs` : "Analyze PDF"}{files.length > 0 && <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-2" />}</>
                 }
               </span>
             </button>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
               {FEATURE_HIGHLIGHTS.map(({ icon: Icon, label, desc, color, bg }) => (
-                <div key={label} className="flex flex-col gap-2.5 rounded-xl border border-border/50 bg-card/30 px-4 py-3.5 hover:border-border/80 transition-colors duration-200">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${bg}`}><Icon className={`w-4 h-4 ${color}`} /></div>
+                <div key={label} className="flex flex-col gap-3 rounded-3xl border-2 border-foreground/5 bg-card px-5 py-6 hover:border-foreground/20 hover:bg-card hover:-translate-y-1 transition-all duration-300 group shadow-sm">
+                  <div className={`w-12 h-12 rounded-full border-2 border-foreground/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 ${bg}`}><Icon className={`w-6 h-6 ${color}`} /></div>
                   <div>
-                    <p className="text-xs font-semibold text-foreground">{label}</p>
-                    <p className="text-xs text-muted-foreground/70 mt-0.5 leading-relaxed">{desc}</p>
+                    <p className="text-base font-bold text-foreground tracking-tight leading-none">{label}</p>
+                    <p className="text-xs text-foreground/70 mt-2 font-medium">{desc}</p>
                   </div>
                 </div>
               ))}
@@ -848,5 +906,7 @@ export default function Home() {
         )}
       </div>
     </div>
+  </div>
+</div>
   );
 }
