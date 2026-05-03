@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam-Ace-Analyzer — Project Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#FFF7ED',
+                            100: '#FFEDD5',
+                            200: '#FED7AA',
+                            300: '#FDBA74',
+                            400: '#FB923C',
+                            500: '#F97316',
+                            600: '#EA580C',
+                            700: '#C2410C',
+                            800: '#9A3412',
+                            900: '#7C2D12',
+                        },
+                        earth: {
+                            50: '#FAFAF5',
+                            100: '#F5F0E8',
+                            200: '#EDE5D8',
+                            300: '#D9CDB8',
+                            400: '#C4B49A',
+                            500: '#A89478',
+                            600: '#8E7A60',
+                            700: '#6E5D48',
+                            800: '#4A3F32',
+                            900: '#2A2419',
+                        },
+                        navy: {
+                            50: '#EFF3FA',
+                            100: '#D9E2F2',
+                            200: '#B3C5E5',
+                            300: '#8DA8D8',
+                            400: '#678BCB',
+                            500: '#416EBE',
+                            600: '#345898',
+                            700: '#274272',
+                            800: '#1A2C4C',
+                            900: '#0D1626',
+                        },
+                        surface: {
+                            DEFAULT: '#FAFAF5',
+                            card: '#FFFFFF',
+                            elevated: '#FFF7ED',
+                            dark: '#1C1917',
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Work Sans', 'sans-serif'],
+                        body: ['Manrope', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        ui: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        ::selection {
+            background: #FDBA74;
+            color: #7C2D12;
+        }
+
+        html {
+            scroll-padding-top: 80px;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);
+            }
+        }
+
+        @keyframes draw-line {
+            from {
+                stroke-dashoffset: 1000;
+            }
+
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-6px);
+            }
+        }
+
+        .animate-fade-up {
+            animation: fadeUp 0.6s ease-out forwards;
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        .stagger-1 {
+            animation-delay: 0.05s;
+        }
+
+        .stagger-2 {
+            animation-delay: 0.1s;
+        }
+
+        .stagger-3 {
+            animation-delay: 0.15s;
+        }
+
+        .stagger-4 {
+            animation-delay: 0.2s;
+        }
+
+        .stagger-5 {
+            animation-delay: 0.25s;
+        }
+
+        .stagger-6 {
+            animation-delay: 0.3s;
+        }
+
+        .arch-line {
+            stroke-dasharray: 1000;
+            animation: draw-line 2s ease-out forwards;
+        }
+
+        .sidebar-link {
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar-link:hover {
+            border-left-color: #FDBA74;
+            background: rgba(249, 115, 22, 0.05);
+            padding-left: 16px;
+        }
+
+        .sidebar-link.active {
+            border-left-color: #F97316;
+            background: rgba(249, 115, 22, 0.08);
+            color: #C2410C;
+            font-weight: 600;
+        }
+
+        .code-block {
+            background: #1C1917;
+            color: #E7E5E4;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .code-block .keyword {
+            color: #FB923C;
+        }
+
+        .code-block .string {
+            color: #A7F3D0;
+        }
+
+        .code-block .comment {
+            color: #78716C;
+        }
+
+        .code-block .property {
+            color: #93C5FD;
+        }
+
+        .code-block .number {
+            color: #FDE68A;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-done {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .status-upcoming {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .status-active {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .tech-card {
+            transition: all 0.3s ease;
+            border: 1px solid #EDE5D8;
+        }
+
+        .tech-card:hover {
+            border-color: #FDBA74;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(249, 115, 22, 0.12);
+        }
+
+        .section-card {
+            border: 1px solid #EDE5D8;
+            border-radius: 12px;
+            background: white;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .section-card:hover {
+            box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06);
+        }
+
+        .flow-node {
+            transition: all 0.3s ease;
+        }
+
+        .flow-node:hover {
+            transform: scale(1.04);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .mobile-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .mobile-sidebar.open {
+            transform: translateX(0);
+        }
+
+        .copy-btn {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .code-block:hover .copy-btn {
+            opacity: 1;
+        }
+
+        @media (max-width: 1023px) {
+            .desktop-sidebar {
+                display: none;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .mobile-toggle {
+                display: none;
+            }
+
+            .mobile-overlay {
+                display: none !important;
+            }
+        }
+
+        .progress-ring {
+            transition: stroke-dashoffset 0.8s ease-out;
+        }
+
+        details summary {
+            cursor: pointer;
+            list-style: none;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details[open] summary .chevron-icon {
+            transform: rotate(90deg);
+        }
+
+        .chevron-icon {
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+
+<body class="bg-surface font-body text-stone-800 antialiased">
+
+    <!-- Top Navigation Bar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-earth-200">
+        <div class="max-w-[1400px] mx-auto px-4 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button class="mobile-toggle p-2 -ml-2 rounded-lg hover:bg-earth-100 lg:hidden"
+                    onclick="toggleMobileSidebar()">
+                    <i data-lucide="menu" class="w-5 h-5 text-earth-700"></i>
+                </button>
+                <div class="flex items-center gap-2.5">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-sm">
+                        <i data-lucide="graduation-cap" class="w-4.5 h-4.5 text-white"
+                            style="width:18px;height:18px;"></i>
+                    </div>
+                    <div>
+                        <span
+                            class="font-heading font-700 text-sm text-earth-900 tracking-tight">Exam-Ace-Analyzer</span>
+                        <span class="hidden sm:inline text-xs text-earth-400 ml-2 font-ui">v2026.5</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="status-badge status-active">
+                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    Live
+                </div>
+                <button onclick="copyProjectInfo()" class="p-2 rounded-lg hover:bg-earth-100 transition-colors"
+                    title="Copy project summary">
+                    <i data-lucide="clipboard-copy" class="w-4 h-4 text-earth-500"></i>
+                </button>
+                <button onclick="exportMarkdown()"
+                    class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-earth-900 text-white text-xs font-600 hover:bg-earth-800 transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div class="mobile-overlay fixed inset-0 bg-black/30 backdrop-blur-sm z-40 hidden" onclick="toggleMobileSidebar()"
+        id="mobileOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside
+        class="desktop-sidebar fixed top-16 left-0 w-64 h-[calc(100vh-64px)] bg-white border-r border-earth-200 overflow-y-auto z-40">
+        <div class="p-4">
+            <p class="text-[10px] font-ui font-600 text-earth-400 uppercase tracking-widest mb-3 px-3">Documentation</p>
+            <nav class="space-y-0.5" id="sidebarNav">
+                <a href="#overview"
+                    class="sidebar-link active block px-3 py-2 text-sm rounded-r-md text-earth-700">Overview</a>
+                <a href="#architecture"
+                    class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">Architecture</a>
+                <a href="#tech-stack" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">Tech
+                    Stack</a>
+                <a href="#ai-engine" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">AI
+                    Engine</a>
+                <a href="#study-pulse" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">Study
+                    Pulse</a>
+                <a href="#data-lifecycle" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">Data
+                    Lifecycle</a>
+                <a href="#frontend" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">Frontend
+                    Design</a>
+                <a href="#roadmap" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">Roadmap</a>
+                <a href="#deployment"
+                    class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">Deployment</a>
+                <a href="#changelog"
+                    class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600">Changelog</a>
+            </nav>
+
+            <div class="mt-6 pt-6 border-t border-earth-200">
+                <p class="text-[10px] font-ui font-600 text-earth-400 uppercase tracking-widest mb-3 px-3">Quick Stats
+                </p>
+                <div class="space-y-3 px-3">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-earth-500">Phase 1</span>
+                            <span class="font-mono font-600 text-brand-600">80%</span>
+                        </div>
+                        <div class="h-1.5 bg-earth-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full"
+                                style="width: 80%;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-earth-500">Features</span>
+                            <span class="font-mono font-600 text-navy-600">4/6</span>
+                        </div>
+                        <div class="h-1.5 bg-earth-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-navy-400 to-navy-600 rounded-full"
+                                style="width: 66.6%;"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-earth-500 pt-1">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                        <span>Last updated: May 2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile Sidebar -->
+    <aside
+        class="mobile-sidebar fixed top-16 left-0 w-72 h-[calc(100vh-64px)] bg-white border-r border-earth-200 overflow-y-auto z-50 shadow-xl"
+        id="mobileSidebar">
+        <div class="p-4">
+            <p class="text-[10px] font-ui font-600 text-earth-400 uppercase tracking-widest mb-3 px-3">Documentation</p>
+            <nav class="space-y-0.5" id="mobileSidebarNav">
+                <a href="#overview" class="sidebar-link active block px-3 py-2 text-sm rounded-r-md text-earth-700"
+                    onclick="toggleMobileSidebar()">Overview</a>
+                <a href="#architecture" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">Architecture</a>
+                <a href="#tech-stack" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">Tech Stack</a>
+                <a href="#ai-engine" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">AI Engine</a>
+                <a href="#study-pulse" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">Study Pulse</a>
+                <a href="#data-lifecycle" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">Data Lifecycle</a>
+                <a href="#frontend" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">Frontend Design</a>
+                <a href="#roadmap" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">Roadmap</a>
+                <a href="#deployment" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">Deployment</a>
+                <a href="#changelog" class="sidebar-link block px-3 py-2 text-sm rounded-r-md text-earth-600"
+                    onclick="toggleMobileSidebar()">Changelog</a>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 pt-16">
+        <div class="max-w-[900px] mx-auto px-5 lg:px-12 py-10 lg:py-16">
+
+            <!-- ============ OVERVIEW ============ -->
+            <section id="overview" class="mb-16 scroll-mt-24">
+                <div class="animate-fade-up opacity-0">
+                    <div class="flex items-center gap-2 mb-4">
+                        <span
+                            class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                            01</span>
+                    </div>
+                    <h1
+                        class="font-heading text-3xl md:text-4xl font-700 text-earth-900 tracking-tight leading-[1.15] mb-4">
+                        Project Overview
+                    </h1>
+                    <p class="text-base md:text-lg text-earth-600 leading-relaxed max-w-[680px] mb-8">
+                        Exam-Ace-Analyzer is a high-fidelity, AI-native educational platform designed to analyze
+                        examination papers and provide interactive tutoring. It leverages the 2026 standard for
+                        generative AI to provide real-time document intelligence.
+                    </p>
+                </div>
+
+                <!-- Key Metric Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-up opacity-0 stagger-1">
+                    <div class="section-card p-4 text-center">
+                        <div class="text-2xl font-heading font-700 text-brand-600">2.5</div>
+                        <div class="text-xs text-earth-500 mt-1 font-ui">Gemini Flash</div>
+                    </div>
+                    <div class="section-card p-4 text-center">
+                        <div class="text-2xl font-heading font-700 text-navy-600">19</div>
+                        <div class="text-xs text-earth-500 mt-1 font-ui">React Version</div>
+                    </div>
+                    <div class="section-card p-4 text-center">
+                        <div class="text-2xl font-heading font-700 text-brand-600">v4+</div>
+                        <div class="text-xs text-earth-500 mt-1 font-ui">Fastify Backend</div>
+                    </div>
+                    <div class="section-card p-4 text-center">
+                        <div class="text-2xl font-heading font-700 text-navy-600">22</div>
+                        <div class="text-xs text-earth-500 mt-1 font-ui">Node.js LTS</div>
+                    </div>
+                </div>
+
+                <!-- Mission Statement -->
+                <div
+                    class="mt-6 section-card p-6 bg-gradient-to-br from-surface-elevated to-white animate-fade-up opacity-0 stagger-2">
+                    <div class="flex items-start gap-3">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i data-lucide="target" class="w-5 h-5 text-brand-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-heading font-600 text-earth-900 text-sm mb-1.5">Mission Statement</h3>
+                            <p class="text-sm text-earth-600 leading-relaxed">
+                                Transform passive exam paper reading into an active, AI-guided learning experience. The
+                                platform doesn't just digitize exams — it <strong
+                                    class="text-earth-800">understands</strong> them, classifies cognitive complexity,
+                                and scaffolds answers using Socratic dialogue to build genuine comprehension rather than
+                                rote memorization.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Design Philosophy -->
+                <div class="mt-4 grid md:grid-cols-3 gap-3 animate-fade-up opacity-0 stagger-3">
+                    <div class="section-card p-5">
+                        <div class="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center mb-3">
+                            <i data-lucide="zap" class="w-4 h-4 text-brand-600"></i>
+                        </div>
+                        <h4 class="font-heading font-600 text-earth-900 text-sm mb-1">Agency-Grade UX</h4>
+                        <p class="text-xs text-earth-500 leading-relaxed">Neo-agency visual language with warm earthy
+                            tones designed to reduce exam fatigue.</p>
+                    </div>
+                    <div class="section-card p-5">
+                        <div class="w-8 h-8 rounded-lg bg-navy-50 flex items-center justify-center mb-3">
+                            <i data-lucide="brain" class="w-4 h-4 text-navy-600"></i>
+                        </div>
+                        <h4 class="font-heading font-600 text-earth-900 text-sm mb-1">AI-Native Core</h4>
+                        <p class="text-xs text-earth-500 leading-relaxed">AI isn't an add-on — it's the foundational
+                            layer. Every feature is designed around Gemini's capabilities.</p>
+                    </div>
+                    <div class="section-card p-5">
+                        <div class="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center mb-3">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-brand-600"></i>
+                        </div>
+                        <h4 class="font-heading font-600 text-earth-900 text-sm mb-1">Zero Censorship</h4>
+                        <p class="text-xs text-earth-500 leading-relaxed">Safety filters configured with BLOCK_NONE for
+                            educational content to prevent false-positive blocking.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ ARCHITECTURE ============ -->
+            <section id="architecture" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        02</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">System
+                    Architecture</h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">Modern decoupled architecture separating concerns
+                    across three distinct layers.</p>
+
+                <!-- Architecture Diagram -->
+                <div class="section-card p-6 md:p-8 mb-6 overflow-x-auto">
+                    <div class="min-w-[600px]">
+                        <!-- Visual Architecture Diagram -->
+                        <div class="flex flex-col items-center gap-4">
+                            <!-- User Node -->
+                            <div
+                                class="flow-node flex items-center gap-3 px-5 py-3 rounded-xl bg-gradient-to-r from-earth-100 to-earth-50 border border-earth-200 shadow-sm">
+                                <div class="w-9 h-9 rounded-full bg-earth-900 flex items-center justify-center">
+                                    <i data-lucide="user" class="w-4 h-4 text-white"></i>
+                                </div>
+                                <div>
+                                    <div class="font-heading font-600 text-sm text-earth-900">User</div>
+                                    <div class="text-[10px] text-earth-500 font-ui">Upload PDF / Interact</div>
+                                </div>
+                            </div>
+
+                            <!-- Arrow Down -->
+                            <div class="flex flex-col items-center">
+                                <div class="w-px h-6 bg-earth-300"></div>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-earth-300 -mt-1"></i>
+                            </div>
+
+                            <!-- Frontend Row -->
+                            <div
+                                class="flow-node w-full max-w-[500px] px-5 py-4 rounded-xl bg-gradient-to-r from-brand-50 to-white border border-brand-200 shadow-sm">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-7 h-7 rounded-lg bg-brand-500 flex items-center justify-center">
+                                        <i data-lucide="layout" class="w-3.5 h-3.5 text-white"></i>
+                                    </div>
+                                    <span class="font-heading font-600 text-sm text-brand-800">Frontend Layer</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <span
+                                        class="text-[10px] font-mono bg-brand-100 text-brand-700 px-2 py-0.5 rounded-md">React
+                                        19</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-brand-100 text-brand-700 px-2 py-0.5 rounded-md">Vite
+                                        7</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-brand-100 text-brand-700 px-2 py-0.5 rounded-md">Tailwind
+                                        4</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-brand-100 text-brand-700 px-2 py-0.5 rounded-md">Radix
+                                        UI</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-brand-100 text-brand-700 px-2 py-0.5 rounded-md">React
+                                        Query</span>
+                                </div>
+                            </div>
+
+                            <!-- Arrow Down -->
+                            <div class="flex flex-col items-center">
+                                <div class="w-px h-6 bg-earth-300"></div>
+                                <span
+                                    class="text-[9px] font-mono text-earth-400 bg-earth-50 px-2 py-0.5 rounded border border-earth-200 -mt-1">POST
+                                    /analyze</span>
+                                <div class="w-px h-6 bg-earth-300"></div>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-earth-300 -mt-1"></i>
+                            </div>
+
+                            <!-- Backend Row -->
+                            <div
+                                class="flow-node w-full max-w-[500px] px-5 py-4 rounded-xl bg-gradient-to-r from-navy-50 to-white border border-navy-200 shadow-sm">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-7 h-7 rounded-lg bg-navy-600 flex items-center justify-center">
+                                        <i data-lucide="server" class="w-3.5 h-3.5 text-white"></i>
+                                    </div>
+                                    <span class="font-heading font-600 text-sm text-navy-800">Backend Layer</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <span
+                                        class="text-[10px] font-mono bg-navy-100 text-navy-700 px-2 py-0.5 rounded-md">Fastify
+                                        v4+</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-navy-100 text-navy-700 px-2 py-0.5 rounded-md">Node.js
+                                        22</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-navy-100 text-navy-700 px-2 py-0.5 rounded-md">Pino
+                                        Logger</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-navy-100 text-navy-700 px-2 py-0.5 rounded-md">ESM
+                                        Modules</span>
+                                </div>
+                            </div>
+
+                            <!-- Arrow Down -->
+                            <div class="flex flex-col items-center">
+                                <div class="w-px h-6 bg-earth-300"></div>
+                                <span
+                                    class="text-[9px] font-mono text-earth-400 bg-earth-50 px-2 py-0.5 rounded border border-earth-200 -mt-1">Native
+                                    PDF Upload</span>
+                                <div class="w-px h-6 bg-earth-300"></div>
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-earth-300 -mt-1"></i>
+                            </div>
+
+                            <!-- AI Engine Row -->
+                            <div
+                                class="flow-node w-full max-w-[500px] px-5 py-4 rounded-xl bg-gradient-to-r from-amber-50 to-white border border-amber-200 shadow-sm pulse-glow">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div
+                                        class="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-amber-500 flex items-center justify-center">
+                                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-white"></i>
+                                    </div>
+                                    <span class="font-heading font-600 text-sm text-amber-800">AI Engine — Gemini 2.5
+                                        Flash</span>
+                                </div>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <span
+                                        class="text-[10px] font-mono bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">Chain-of-Thought</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">Multimodal
+                                        OCR</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">Native
+                                        PDF</span>
+                                    <span
+                                        class="text-[10px] font-mono bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">Structured
+                                        JSON</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Architecture Principles -->
+                <div class="grid md:grid-cols-2 gap-3">
+                    <div class="section-card p-5">
+                        <h4 class="font-heading font-600 text-earth-900 text-sm mb-2 flex items-center gap-2">
+                            <i data-lucide="puzzle" class="w-4 h-4 text-brand-500"></i>
+                            Decoupled Design
+                        </h4>
+                        <p class="text-xs text-earth-500 leading-relaxed">Frontend and backend communicate exclusively
+                            through REST/WebSocket APIs. Either layer can be independently scaled, redeployed, or
+                            replaced without affecting the other.</p>
+                    </div>
+                    <div class="section-card p-5">
+                        <h4 class="font-heading font-600 text-earth-900 text-sm mb-2 flex items-center gap-2">
+                            <i data-lucide="gauge" class="w-4 h-4 text-navy-500"></i>
+                            Performance-First
+                        </h4>
+                        <p class="text-xs text-earth-500 leading-relaxed">Fastify was chosen over Express for its ~2x
+                            throughput advantage. Vite 7 provides near-instant HMR. Gemini Flash optimized for
+                            latency-critical interactive tutoring.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ TECH STACK ============ -->
+            <section id="tech-stack" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        03</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">Technology
+                    Stack</h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">Every technology chosen with intention. No bloat,
+                    no legacy dependencies.</p>
+
+                <!-- Full Stack Table -->
+                <div class="section-card overflow-hidden mb-6">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-earth-50 border-b border-earth-200">
+                                    <th
+                                        class="text-left px-5 py-3 font-heading font-600 text-xs text-earth-600 uppercase tracking-wider">
+                                        Layer</th>
+                                    <th
+                                        class="text-left px-5 py-3 font-heading font-600 text-xs text-earth-600 uppercase tracking-wider">
+                                        Technology</th>
+                                    <th
+                                        class="text-left px-5 py-3 font-heading font-600 text-xs text-earth-600 uppercase tracking-wider hidden md:table-cell">
+                                        Version</th>
+                                    <th
+                                        class="text-left px-5 py-3 font-heading font-600 text-xs text-earth-600 uppercase tracking-wider">
+                                        Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-earth-100">
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-brand-700 bg-brand-50 px-2 py-0.5 rounded">FRONTEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">React</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">19
+                                    </td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">UI framework with concurrent features
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-brand-700 bg-brand-50 px-2 py-0.5 rounded">FRONTEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">Vite</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">7</td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Build tool with ultra-fast HMR</td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-brand-700 bg-brand-50 px-2 py-0.5 rounded">FRONTEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">Tailwind CSS</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">4</td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Atomic CSS with custom design tokens
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-brand-700 bg-brand-50 px-2 py-0.5 rounded">FRONTEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">Radix UI + Shadcn/UI</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">—</td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Accessible headless component
+                                        primitives</td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-brand-700 bg-brand-50 px-2 py-0.5 rounded">FRONTEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">React Query</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">
+                                        TanStack</td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Server state management & caching
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-brand-700 bg-brand-50 px-2 py-0.5 rounded">FRONTEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">Lucide React</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">—</td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Lightweight stroke-based iconography
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-navy-700 bg-navy-50 px-2 py-0.5 rounded">BACKEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">Fastify</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">v4+
+                                    </td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">High-throughput API framework</td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-navy-700 bg-navy-50 px-2 py-0.5 rounded">BACKEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">Node.js</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">22 LTS
+                                    </td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Runtime with modern ESM support</td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-navy-700 bg-navy-50 px-2 py-0.5 rounded">BACKEND</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">Pino</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">—</td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Structured JSON logging</td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors bg-amber-50/40">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">AI</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800 font-600">Gemini 2.5 Flash
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">2026
+                                        Stable</td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Multi-modal document understanding
+                                    </td>
+                                </tr>
+                                <tr class="hover:bg-earth-50/50 transition-colors bg-amber-50/40">
+                                    <td class="px-5 py-3.5"><span
+                                            class="text-[10px] font-mono font-600 text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">AI</span>
+                                    </td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-800">@google/generative-ai</td>
+                                    <td class="px-5 py-3.5 font-mono text-xs text-earth-500 hidden md:table-cell">SDK
+                                    </td>
+                                    <td class="px-5 py-3.5 text-xs text-earth-600">Direct SDK for low-latency inference
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Key Dependency Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="tech-card p-4 rounded-xl bg-white">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="w-6 h-6 rounded bg-blue-100 flex items-center justify-center text-[10px] font-mono font-700 text-blue-700">
+                                Re</div>
+                            <span class="font-mono text-xs text-earth-800">React 19</span>
+                        </div>
+                        <p class="text-[11px] text-earth-500 leading-relaxed">Concurrent rendering, server components
+                            ready, automatic batching</p>
+                    </div>
+                    <div class="tech-card p-4 rounded-xl bg-white">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="w-6 h-6 rounded bg-purple-100 flex items-center justify-center text-[10px] font-mono font-700 text-purple-700">
+                                Vi</div>
+                            <span class="font-mono text-xs text-earth-800">Vite 7</span>
+                        </div>
+                        <p class="text-[11px] text-earth-500 leading-relaxed">Rollup-based bundling, native ESM,
+                            environment API</p>
+                    </div>
+                    <div class="tech-card p-4 rounded-xl bg-white">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="w-6 h-6 rounded bg-cyan-100 flex items-center justify-center text-[10px] font-mono font-700 text-cyan-700">
+                                Tw</div>
+                            <span class="font-mono text-xs text-earth-800">Tailwind 4</span>
+                        </div>
+                        <p class="text-[11px] text-earth-500 leading-relaxed">CSS-first config, zero-runtime, container
+                            queries native</p>
+                    </div>
+                    <div class="tech-card p-4 rounded-xl bg-white">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-[10px] font-mono font-700 text-gray-700">
+                                Fa</div>
+                            <span class="font-mono text-xs text-earth-800">Fastify v4</span>
+                        </div>
+                        <p class="text-[11px] text-earth-500 leading-relaxed">Schema validation, plugin ecosystem, 76k+
+                            req/sec throughput</p>
+                    </div>
+                    <div class="tech-card p-4 rounded-xl bg-white">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="w-6 h-6 rounded bg-green-100 flex items-center justify-center text-[10px] font-mono font-700 text-green-700">
+                                No</div>
+                            <span class="font-mono text-xs text-earth-800">Node.js 22</span>
+                        </div>
+                        <p class="text-[11px] text-earth-500 leading-relaxed">V8 Maglev compiler, require(esm),
+                            WebSocket native</p>
+                    </div>
+                    <div class="tech-card p-4 rounded-xl bg-white border-amber-200 bg-amber-50/30">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div
+                                class="w-6 h-6 rounded bg-amber-100 flex items-center justify-center text-[10px] font-mono font-700 text-amber-700">
+                                Ge</div>
+                            <span class="font-mono text-xs text-earth-800 font-600">Gemini 2.5</span>
+                        </div>
+                        <p class="text-[11px] text-earth-500 leading-relaxed">1M token context, native PDF, CoT
+                            reasoning, multimodal</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ AI ENGINE ============ -->
+            <section id="ai-engine" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        04</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">AI Engine —
+                    Gemini 2.5</h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">The intelligence core. How the AI processes,
+                    understands, and tutors from examination papers.</p>
+
+                <!-- AI Feature Cards -->
+                <div class="space-y-3 mb-6">
+                    <details class="section-card overflow-hidden group" open>
+                        <summary class="flex items-center justify-between p-5 hover:bg-earth-50/50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+                                    <i data-lucide="brain-circuit" class="w-4.5 h-4.5 text-amber-600"
+                                        style="width:18px;height:18px;"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-heading font-600 text-earth-900 text-sm">Chain-of-Thought Prompting
+                                    </h4>
+                                    <p class="text-[11px] text-earth-400 mt-0.5">Structured reasoning for question
+                                        extraction</p>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-right"
+                                class="w-4 h-4 text-earth-400 chevron-icon flex-shrink-0"></i>
+                        </summary>
+                        <div class="px-5 pb-5 pt-0">
+                            <p class="text-sm text-earth-600 leading-relaxed mb-3">
+                                Instead of naive "find all questions" prompts, the AI is instructed to identify three
+                                distinct components for every question:
+                            </p>
+                            <div class="grid md:grid-cols-3 gap-2">
+                                <div class="bg-earth-50 rounded-lg p-3 border border-earth-100">
+                                    <div
+                                        class="text-[10px] font-mono font-600 text-brand-600 uppercase tracking-wider mb-1">
+                                        Stem</div>
+                                    <p class="text-xs text-earth-600">The actual question being asked, including context
+                                        and constraints.</p>
+                                </div>
+                                <div class="bg-earth-50 rounded-lg p-3 border border-earth-100">
+                                    <div
+                                        class="text-[10px] font-mono font-600 text-navy-600 uppercase tracking-wider mb-1">
+                                        Options</div>
+                                    <p class="text-xs text-earth-600">All answer choices (A/B/C/D) with their full text
+                                        preserved.</p>
+                                </div>
+                                <div class="bg-earth-50 rounded-lg p-3 border border-earth-100">
+                                    <div
+                                        class="text-[10px] font-mono font-600 text-amber-600 uppercase tracking-wider mb-1">
+                                        Cognitive Level</div>
+                                    <p class="text-xs text-earth-600">Bloom's taxonomy classification (Remember →
+                                        Create).</p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="section-card overflow-hidden group">
+                        <summary class="flex items-center justify-between p-5 hover:bg-earth-50/50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+                                    <i data-lucide="scan-eye" class="w-4.5 h-4.5 text-amber-600"
+                                        style="width:18px;height:18px;"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-heading font-600 text-earth-900 text-sm">Multimodal OCR</h4>
+                                    <p class="text-[11px] text-earth-400 mt-0.5">Direct image-to-text for formulas &
+                                        diagrams</p>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-right"
+                                class="w-4 h-4 text-earth-400 chevron-icon flex-shrink-0"></i>
+                        </summary>
+                        <div class="px-5 pb-5 pt-0">
+                            <p class="text-sm text-earth-600 leading-relaxed mb-3">
+                                Mathematical formulas, chemical equations, circuit diagrams, and complex tables are
+                                processed directly as images. Gemini 2.5's native vision capabilities eliminate the need
+                                for traditional OCR tools like <code
+                                    class="font-mono text-xs bg-earth-100 px-1.5 py-0.5 rounded text-earth-700">pdftoppm</code>
+                                which had Windows compatibility issues.
+                            </p>
+                            <div class="bg-stone-900 rounded-lg p-4 border border-stone-700">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-[10px] font-mono text-stone-500 uppercase tracking-wider">Legacy
+                                        vs Native</span>
+                                    <span
+                                        class="copy-btn text-[10px] font-mono text-stone-500 cursor-pointer hover:text-stone-300"
+                                        onclick="showToast('Copied to clipboard!')">Copy</span>
+                                </div>
+                                <pre class="text-xs font-mono leading-relaxed"><span class="comment">// ❌ Legacy (removed)</span>
+<span class="keyword">const</span> images = <span class="keyword">await</span> pdfToImages(buffer); <span class="comment">// pdftoppm — Windows broken</span>
+
+<span class="comment">// ✅ Current (Gemini Native)</span>
+<span class="keyword">const</span> result = <span class="keyword">await</span> model.<span class="property">generateContent</span>({
+  contents: [{
+    parts: [
+      { <span class="property">inlineData</span>: { mimeType: <span class="string">'application/pdf'</span>, data: base64 } }
+    ]
+  }]
+});</pre>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="section-card overflow-hidden group">
+                        <summary class="flex items-center justify-between p-5 hover:bg-earth-50/50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+                                    <i data-lucide="message-circle-question" class="w-4.5 h-4.5 text-amber-600"
+                                        style="width:18px;height:18px;"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-heading font-600 text-earth-900 text-sm">Socratic Context Injection
+                                    </h4>
+                                    <p class="text-[11px] text-earth-400 mt-0.5">System instructions for tutoring style
+                                    </p>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-right"
+                                class="w-4 h-4 text-earth-400 chevron-icon flex-shrink-0"></i>
+                        </summary>
+                        <div class="px-5 pb-5 pt-0">
+                            <p class="text-sm text-earth-600 leading-relaxed mb-3">
+                                The AI's system instruction enforces a <strong>Socratic tutoring style</strong>. When a
+                                user asks about a question, it doesn't just reveal the answer — it guides through the
+                                reasoning:
+                            </p>
+                            <div class="space-y-2">
+                                <div
+                                    class="flex items-start gap-2.5 bg-earth-50 rounded-lg p-3 border border-earth-100">
+                                    <span
+                                        class="text-[10px] font-mono font-600 text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded mt-0.5">STEP
+                                        1</span>
+                                    <p class="text-xs text-earth-600">Identify the underlying concept ("This is a
+                                        question about Newtonian mechanics...")</p>
+                                </div>
+                                <div
+                                    class="flex items-start gap-2.5 bg-earth-50 rounded-lg p-3 border border-earth-100">
+                                    <span
+                                        class="text-[10px] font-mono font-600 text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded mt-0.5">STEP
+                                        2</span>
+                                    <p class="text-xs text-earth-600">Ask a guiding question ("What forces are acting on
+                                        the object?")</p>
+                                </div>
+                                <div
+                                    class="flex items-start gap-2.5 bg-earth-50 rounded-lg p-3 border border-earth-100">
+                                    <span
+                                        class="text-[10px] font-mono font-600 text-brand-600 bg-brand-50 px-1.5 py-0.5 rounded mt-0.5">STEP
+                                        3</span>
+                                    <p class="text-xs text-earth-600">Scaffold the answer progressively based on student
+                                        responses</p>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="section-card overflow-hidden group">
+                        <summary class="flex items-center justify-between p-5 hover:bg-earth-50/50 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+                                    <i data-lucide="shield-off" class="w-4.5 h-4.5 text-amber-600"
+                                        style="width:18px;height:18px;"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-heading font-600 text-earth-900 text-sm">Safety Configuration</h4>
+                                    <p class="text-[11px] text-earth-400 mt-0.5">BLOCK_NONE for educational content</p>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-right"
+                                class="w-4 h-4 text-earth-400 chevron-icon flex-shrink-0"></i>
+                        </summary>
+                        <div class="px-5 pb-5 pt-0">
+                            <p class="text-sm text-earth-600 leading-relaxed mb-3">
+                                Educational exam content (biology diagrams, historical events, chemical processes) can
+                                trigger false-positive safety filters. The safety settings are explicitly configured to
+                                prevent this:
+                            </p>
+                            <div class="bg-stone-900 rounded-lg p-4 border border-stone-700">
+                                <pre class="text-xs font-mono leading-relaxed"><span class="keyword">const</span> safetySettings = [
+  { <span class="property">category</span>: <span class="string">"HARM_CATEGORY_HARASSMENT"</span>, <span class="property">threshold</span>: <span class="string">"BLOCK_NONE"</span> },
+  { <span class="property">category</span>: <span class="string">"HARM_CATEGORY_HATE_SPEECH"</span>, <span class="property">threshold</span>: <span class="string">"BLOCK_NONE"</span> },
+  { <span class="property">category</span>: <span class="string">"HARM_CATEGORY_SEXUALLY_EXPLICIT"</span>, <span class="property">threshold</span>: <span class="string">"BLOCK_NONE"</span> },
+  { <span class="property">category</span>: <span class="string">"HARM_CATEGORY_DANGEROUS_CONTENT"</span>, <span class="property">threshold</span>: <span class="string">"BLOCK_NONE"</span> },
+];</pre>
+                            </div>
+                            <div class="mt-3 flex items-start gap-2 bg-amber-50 rounded-lg p-3 border border-amber-200">
+                                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                                <p class="text-xs text-amber-800"><strong>Note:</strong> This configuration is
+                                    intentional for a controlled educational environment. In production, consider
+                                    implementing a custom content filter layer.</p>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </section>
+
+            <!-- ============ STUDY PULSE ============ -->
+            <section id="study-pulse" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        05</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">Study Pulse —
+                    Music Engine</h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">An ambient focus music system built with redundancy
+                    and modern browser API awareness.</p>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="section-card p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center animate-float">
+                                <i data-lucide="music" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-heading font-600 text-earth-900 text-sm">Glassmorphic UI</h4>
+                                <p class="text-[11px] text-earth-400">Top-right translucent controller</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-earth-600 leading-relaxed">A vertical control stack positioned in the
+                            top-right corner with backdrop-blur glassmorphism. Shows real-time status diagnostics:
+                            current source, play state, and fallback status.</p>
+                    </div>
+                    <div class="section-card p-6">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-navy-400 to-navy-600 flex items-center justify-center animate-float"
+                                style="animation-delay: 0.5s;">
+                                <i data-lucide="shuffle" class="w-5 h-5 text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-heading font-600 text-earth-900 text-sm">Triple-Redundancy</h4>
+                                <p class="text-[11px] text-earth-400">Automatic CDN source cycling</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-earth-600 leading-relaxed">Three independent CDN sources (SoundHelix,
+                            Pixabay, private stream) are maintained. If one fails — due to CORS, rate limiting, or
+                            outage — the player automatically cycles to the next without user intervention.</p>
+                    </div>
+                </div>
+
+                <!-- Audio Pipeline Details -->
+                <div class="section-card p-6 mb-4">
+                    <h4 class="font-heading font-600 text-earth-900 text-sm mb-4 flex items-center gap-2">
+                        <i data-lucide="git-branch" class="w-4 h-4 text-brand-500"></i>
+                        Audio Pipeline Flow
+                    </h4>
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <span
+                            class="font-mono bg-brand-50 text-brand-700 px-2.5 py-1.5 rounded-lg border border-brand-200">User
+                            Interaction</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-earth-300"></i>
+                        <span
+                            class="font-mono bg-earth-50 text-earth-700 px-2.5 py-1.5 rounded-lg border border-earth-200">Unlock
+                            AudioContext</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-earth-300"></i>
+                        <span
+                            class="font-mono bg-earth-50 text-earth-700 px-2.5 py-1.5 rounded-lg border border-earth-200">Try
+                            Source 1</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-earth-300"></i>
+                        <span
+                            class="font-mono bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200">Fail?
+                            → Source 2</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-earth-300"></i>
+                        <span
+                            class="font-mono bg-red-50 text-red-600 px-2.5 py-1.5 rounded-lg border border-red-200">Fail?
+                            → Source 3</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-earth-300"></i>
+                        <span
+                            class="font-mono bg-green-50 text-green-700 px-2.5 py-1.5 rounded-lg border border-green-200">Playing
+                            ✓</span>
+                    </div>
+                </div>
+
+                <!-- Bug Fix Highlight -->
+                <div class="section-card p-5 border-l-4 border-l-green-500">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="bug" class="w-4 h-4 text-green-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-heading font-600 text-earth-900 text-sm mb-1">Bug Fix: Pause Button Race
+                                Condition</h4>
+                            <p class="text-xs text-earth-600 leading-relaxed mb-3">
+                                The pause button wasn't working because the global <code
+                                    class="font-mono bg-earth-100 px-1 rounded text-earth-700">interaction-unlock</code>
+                                listener was re-triggering playback on every click. Fixed with <code
+                                    class="font-mono bg-earth-100 px-1 rounded text-earth-700">e.stopPropagation()</code>
+                                on the pause control to prevent event bubbling to the global listener.
+                            </p>
+                            <div class="bg-stone-900 rounded-lg p-3 border border-stone-700">
+                                <pre class="text-[11px] font-mono leading-relaxed"><span class="comment">// The fix — stop propagation on pause button</span>
+pauseBtn.<span class="property">addEventListener</span>(<span class="string">'click'</span>, (e) => {
+  e.<span class="property">stopPropagation</span>(); <span class="comment">// ← prevents global re-trigger</span>
+  audio.<span class="property">pause</span>();
+});</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ DATA LIFECYCLE ============ -->
+            <section id="data-lifecycle" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        06</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">Data Lifecycle
+                </h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">The "Analysis Path" — from PDF upload to
+                    interactive tutoring session.</p>
+
+                <div class="space-y-0">
+                    <!-- Step 1 -->
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div
+                                class="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-heading font-700 text-sm shadow-lg shadow-brand-500/20">
+                                1</div>
+                            <div class="w-px flex-1 bg-earth-200 my-2"></div>
+                        </div>
+                        <div class="section-card p-5 flex-1 mb-4">
+                            <h4 class="font-heading font-600 text-earth-900 text-sm mb-1">Ingestion</h4>
+                            <p class="text-xs text-earth-600 leading-relaxed">User uploads a PDF through the
+                                drag-and-drop interface. The frontend converts the file to a <code
+                                    class="font-mono bg-earth-100 px-1 rounded text-earth-700">Buffer</code> / <code
+                                    class="font-mono bg-earth-100 px-1 rounded text-earth-700">Base64</code> string and
+                                sends it via POST to the backend API.</p>
+                        </div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div
+                                class="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-heading font-700 text-sm shadow-lg shadow-brand-500/20">
+                                2</div>
+                            <div class="w-px flex-1 bg-earth-200 my-2"></div>
+                        </div>
+                        <div class="section-card p-5 flex-1 mb-4">
+                            <h4 class="font-heading font-600 text-earth-900 text-sm mb-1">Transformation</h4>
+                            <p class="text-xs text-earth-600 leading-relaxed">The API server receives the file. Instead
+                                of pre-processing with external OCR tools, the raw PDF is sent directly to Gemini 2.5 as
+                                a <code class="font-mono bg-earth-100 px-1 rounded text-earth-700">document</code> part
+                                — leveraging Gemini's native PDF understanding.</p>
+                        </div>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div
+                                class="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center text-white font-heading font-700 text-sm shadow-lg shadow-brand-500/20">
+                                3</div>
+                            <div class="w-px flex-1 bg-earth-200 my-2"></div>
+                        </div>
+                        <div class="section-card p-5 flex-1 mb-4">
+                            <h4 class="font-heading font-600 text-earth-900 text-sm mb-1">Extraction</h4>
+                            <p class="text-xs text-earth-600 leading-relaxed">The model identifies every individual
+                                question, generates a unique ID for each, classifies it by subject, and tags the
+                                cognitive level (Bloom's taxonomy). Output is structured JSON.</p>
+                        </div>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div
+                                class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-heading font-700 text-sm shadow-lg shadow-green-500/20">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div class="section-card p-5 flex-1 border-green-200 bg-green-50/30">
+                            <h4 class="font-heading font-600 text-earth-900 text-sm mb-1">Interaction</h4>
+                            <p class="text-xs text-earth-600 leading-relaxed">User clicks a question in the split-pane
+                                viewer. The AI generates a <strong>scaffolded answer</strong> — explaining the
+                                underlying concept, asking guiding questions, and progressively revealing the solution
+                                based on student interaction.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ FRONTEND DESIGN ============ -->
+            <section id="frontend" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        07</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">Frontend
+                    Design</h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">Neo-Agency visual language designed to reduce exam
+                    fatigue.</p>
+
+                <!-- Color Palette -->
+                <div class="section-card p-6 mb-4">
+                    <h4 class="font-heading font-600 text-earth-900 text-sm mb-4 flex items-center gap-2">
+                        <i data-lucide="palette" class="w-4 h-4 text-brand-500"></i>
+                        "Warm Earthy" Color System
+                    </h4>
+                    <div class="grid grid-cols-5 md:grid-cols-10 gap-2 mb-4">
+                        <div class="aspect-square rounded-lg bg-[#FFF7ED] border border-earth-200" title="brand-50">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#FFEDD5] border border-earth-200" title="brand-100">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#FDBA74] border border-earth-200" title="brand-300">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#F97316] border border-earth-200" title="brand-500">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#9A3412] border border-earth-200" title="brand-800">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#FAFAF5] border border-earth-200" title="surface">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#EDE5D8] border border-earth-200" title="earth-200">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#A89478] border border-earth-200" title="earth-500">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#4A3F32] border border-earth-200" title="earth-800">
+                        </div>
+                        <div class="aspect-square rounded-lg bg-[#1C1917] border border-earth-200" title="surface-dark">
+                        </div>
+                    </div>
+                    <p class="text-xs text-earth-500 leading-relaxed">High-saturation primaries (burnt orange, deep
+                        blue) paired with soft organic backgrounds. Designed specifically to reduce cognitive fatigue
+                        during extended study sessions — avoiding the clinical coldness of typical SaaS blue/purple
+                        palettes.</p>
+                </div>
+
+                <!-- Layout Pattern -->
+                <div class="section-card p-6 mb-4">
+                    <h4 class="font-heading font-600 text-earth-900 text-sm mb-4 flex items-center gap-2">
+                        <i data-lucide="columns-2" class="w-4 h-4 text-navy-500"></i>
+                        Split-Pane Viewer Layout
+                    </h4>
+                    <div class="bg-earth-50 rounded-lg p-4 border border-earth-200">
+                        <div class="flex gap-2 h-32">
+                            <div
+                                class="flex-1 bg-white rounded-lg border border-earth-200 p-3 flex flex-col items-center justify-center">
+                                <i data-lucide="file-text" class="w-5 h-5 text-earth-400 mb-1.5"></i>
+                                <span class="text-[10px] font-mono text-earth-500">Original PDF</span>
+                                <span class="text-[9px] text-earth-400">Left Pane</span>
+                            </div>
+                            <div class="w-px bg-earth-200 flex items-center justify-center">
+                                <div class="w-3 h-8 bg-earth-300 rounded-full"></div>
+                            </div>
+                            <div
+                                class="flex-1 bg-white rounded-lg border border-brand-200 p-3 flex flex-col items-center justify-center">
+                                <i data-lucide="sparkles" class="w-5 h-5 text-brand-400 mb-1.5"></i>
+                                <span class="text-[10px] font-mono text-brand-600">AI Questions</span>
+                                <span class="text-[9px] text-brand-400">Right Pane</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-earth-500 leading-relaxed mt-3">Users see the original exam paper on the left
+                        and AI-generated interactive questions on the right. The draggable divider allows adjusting the
+                        ratio based on preference.</p>
+                </div>
+
+                <!-- Typography -->
+                <div class="section-card p-6">
+                    <h4 class="font-heading font-600 text-earth-900 text-sm mb-4 flex items-center gap-2">
+                        <i data-lucide="type" class="w-4 h-4 text-brand-500"></i>
+                        Typography Scale
+                    </h4>
+                    <div class="space-y-3">
+                        <div class="flex items-baseline gap-4">
+                            <span class="text-[10px] font-mono text-earth-400 w-20 flex-shrink-0">Heading</span>
+                            <span class="font-heading text-2xl font-700 text-earth-900">Work Sans 700</span>
+                        </div>
+                        <div class="flex items-baseline gap-4">
+                            <span class="text-[10px] font-mono text-earth-400 w-20 flex-shrink-0">Body</span>
+                            <span class="font-body text-base text-earth-700">Manrope 400</span>
+                        </div>
+                        <div class="flex items-baseline gap-4">
+                            <span class="text-[10px] font-mono text-earth-400 w-20 flex-shrink-0">UI/Label</span>
+                            <span class="font-ui text-sm text-earth-600">Inter 500</span>
+                        </div>
+                        <div class="flex items-baseline gap-4">
+                            <span class="text-[10px] font-mono text-earth-400 w-20 flex-shrink-0">Code</span>
+                            <span class="font-mono text-sm text-earth-600">JetBrains Mono 400</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ ROADMAP ============ -->
+            <section id="roadmap" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        08</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">Implementation
+                    Roadmap</h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">Phase 1 is complete. Here's the full picture of
+                    what's been built and what's next.</p>
+
+                <!-- Phase 1 -->
+                <div class="section-card p-6 mb-4 border-l-4 border-l-green-500">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                                <i data-lucide="check-circle-2" class="w-4 h-4 text-green-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-heading font-600 text-earth-900 text-sm">Phase 1 — Foundation</h4>
+                                <p class="text-[11px] text-earth-400">Completed May 2026</p>
+                            </div>
+                        </div>
+                        <span class="status-badge status-done"><span
+                                class="w-1.5 h-1.5 rounded-full bg-green-600"></span>Complete</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
+                            <span class="text-earth-700">Initial UI/UX Prototype (Warm Earthy Theme)</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
+                            <span class="text-earth-700">Backend API Integration (Fastify)</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
+                            <span class="text-earth-700">Gemini 2.5 Flash Migration (May 2026 Standard)</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
+                            <span class="text-earth-700">Integrated Focus Music Engine ("Study Pulse")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="section-card p-6 mb-4 border-l-4 border-l-amber-400">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                                <i data-lucide="clock" class="w-4 h-4 text-amber-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-heading font-600 text-earth-900 text-sm">Phase 2 — Voice & Collaboration
+                                </h4>
+                                <p class="text-[11px] text-earth-400">Target: Q3 2026</p>
+                            </div>
+                        </div>
+                        <span class="status-badge status-upcoming"><span
+                                class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Upcoming</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="circle" class="w-4 h-4 text-earth-300 flex-shrink-0"></i>
+                            <span class="text-earth-500">Voice-to-Question Interaction (Gemini Live API)</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="circle" class="w-4 h-4 text-earth-300 flex-shrink-0"></i>
+                            <span class="text-earth-500">Collaborative Study Sync (Peer Focus Rooms)</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="circle" class="w-4 h-4 text-earth-300 flex-shrink-0"></i>
+                            <span class="text-earth-500">Synchronized Focus Music Across Sessions</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 3 (Future Vision) -->
+                <div class="section-card p-6 border-l-4 border-l-navy-400">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-navy-50 flex items-center justify-center">
+                                <i data-lucide="rocket" class="w-4 h-4 text-navy-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-heading font-600 text-earth-900 text-sm">Phase 3 — Advanced Features
+                                </h4>
+                                <p class="text-[11px] text-earth-400">Target: Q4 2026</p>
+                            </div>
+                        </div>
+                        <span class="status-badge status-upcoming"><span
+                                class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>Vision</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="circle" class="w-4 h-4 text-earth-300 flex-shrink-0"></i>
+                            <span class="text-earth-500">3D Diagram Generation from 2D Exam Images (WebGL)</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="circle" class="w-4 h-4 text-earth-300 flex-shrink-0"></i>
+                            <span class="text-earth-500">Spaced Repetition Integration</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-sm">
+                            <i data-lucide="circle" class="w-4 h-4 text-earth-300 flex-shrink-0"></i>
+                            <span class="text-earth-500">Performance Analytics Dashboard</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ DEPLOYMENT ============ -->
+            <section id="deployment" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        09</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">Deployment &
+                    Maintenance</h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">Infrastructure, diagnostics, and operational
+                    tooling.</p>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div class="section-card p-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
+                                <i data-lucide="triangle" class="w-4 h-4 text-gray-700"></i>
+                            </div>
+                            <h4 class="font-heading font-600 text-earth-900 text-sm">Vercel (Frontend)</h4>
+                        </div>
+                        <p class="text-xs text-earth-600 leading-relaxed mb-3">React SPA deployed to Vercel's edge
+                            network. Automatic preview deployments on every push to main branch.</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span class="text-[10px] font-mono bg-earth-100 text-earth-600 px-2 py-0.5 rounded">Edge
+                                CDN</span>
+                            <span class="text-[10px] font-mono bg-earth-100 text-earth-600 px-2 py-0.5 rounded">Auto
+                                SSL</span>
+                            <span class="text-[10px] font-mono bg-earth-100 text-earth-600 px-2 py-0.5 rounded">Preview
+                                Deploys</span>
+                        </div>
+                    </div>
+                    <div class="section-card p-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
+                                <i data-lucide="train-front" class="w-4 h-4 text-purple-700"></i>
+                            </div>
+                            <h4 class="font-heading font-600 text-earth-900 text-sm">Railway (Backend)</h4>
+                        </div>
+                        <p class="text-xs text-earth-600 leading-relaxed mb-3">Fastify server deployed to Railway with
+                            automatic GitHub sync. Environment variables managed through Railway's dashboard.</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span
+                                class="text-[10px] font-mono bg-earth-100 text-earth-600 px-2 py-0.5 rounded">Auto-deploy</span>
+                            <span class="text-[10px] font-mono bg-earth-100 text-earth-600 px-2 py-0.5 rounded">Env
+                                Vars</span>
+                            <span class="text-[10px] font-mono bg-earth-100 text-earth-600 px-2 py-0.5 rounded">Health
+                                Checks</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagnostic Script -->
+                <div class="section-card p-6">
+                    <h4 class="font-heading font-600 text-earth-900 text-sm mb-3 flex items-center gap-2">
+                        <i data-lucide="stethoscope" class="w-4 h-4 text-brand-500"></i>
+                        Diagnostic Tool: <code class="font-mono text-xs">list-models.mjs</code>
+                    </h4>
+                    <p class="text-xs text-earth-600 leading-relaxed mb-3">Custom environment validation script that
+                        verifies API key validity and lists available Gemini models. Used for debugging connectivity
+                        issues during setup.</p>
+                    <div class="bg-stone-900 rounded-lg p-4 border border-stone-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <span
+                                class="text-[10px] font-mono text-stone-500 uppercase tracking-wider">list-models.mjs</span>
+                            <button
+                                class="copy-btn text-[10px] font-mono text-stone-500 cursor-pointer hover:text-stone-300 flex items-center gap-1"
+                                onclick="copyCode(this)">
+                                <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                            </button>
+                        </div>
+                        <pre class="text-[11px] font-mono leading-relaxed"><span class="keyword">import</span> { GoogleGenerativeAI } <span class="keyword">from</span> <span class="string">'@google/generative-ai'</span>;
+
+<span class="keyword">const</span> genAI = <span class="keyword">new</span> <span class="property">GoogleGenerativeAI</span>(process.env.<span class="property">GEMINI_API_KEY</span>);
+
+<span class="keyword">async function</span> <span class="property">listModels</span>() {
+  <span class="keyword">const</span> models = <span class="keyword">await</span> genAI.<span class="property">listModels</span>();
+  models.<span class="property">forEach</span>(m => <span class="property">console</span>.<span class="property">log</span>(m.<span class="property">name</span>));
+}
+<span class="property">listModels</span>();</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ CHANGELOG ============ -->
+            <section id="changelog" class="mb-16 scroll-mt-24">
+                <div class="flex items-center gap-2 mb-4">
+                    <span
+                        class="text-[10px] font-ui font-600 text-brand-600 uppercase tracking-widest bg-brand-50 px-2.5 py-1 rounded-full">Section
+                        10</span>
+                </div>
+                <h2 class="font-heading text-2xl md:text-3xl font-600 text-earth-900 tracking-tight mb-2">Changelog</h2>
+                <p class="text-sm text-earth-500 mb-8 max-w-[600px]">Chronological record of all significant changes and
+                    decisions.</p>
+
+                <div class="relative">
+                    <div class="absolute left-[15px] top-2 bottom-2 w-px bg-earth-200"></div>
+
+                    <!-- Entry 1 -->
+                    <div class="relative pl-10 pb-8">
+                        <div
+                            class="absolute left-0 top-1 w-[31px] h-[31px] rounded-full bg-green-500 flex items-center justify-center z-10">
+                            <i data-lucide="check" class="w-3.5 h-3.5 text-white"></i>
+                        </div>
+                        <div class="section-card p-5">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="font-heading font-600 text-sm text-earth-900">Platform Stabilization &
+                                    Gemini 2.5 Migration</span>
+                            </div>
+                            <span class="text-[10px] font-mono text-earth-400">May 2026</span>
+                            <ul class="mt-3 space-y-1.5">
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Migrated from retired Gemini 1.5 models to stable Gemini 2.5 Flash
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Verified API connectivity via custom <code
+                                        class="font-mono bg-earth-100 px-1 rounded text-earth-700">list-models.mjs</code>
+                                    scanner
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Optimized safety settings (BLOCK_NONE) for educational content
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Implemented "Study Pulse" vertical control stack
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Fixed pause button race condition with <code
+                                        class="font-mono bg-earth-100 px-1 rounded text-earth-700">stopPropagation</code>
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Added triple-redundancy CDN fallbacks for audio
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Entry 2 -->
+                    <div class="relative pl-10 pb-8">
+                        <div
+                            class="absolute left-0 top-1 w-[31px] h-[31px] rounded-full bg-amber-500 flex items-center justify-center z-10">
+                            <i data-lucide="wrench" class="w-3.5 h-3.5 text-white"></i>
+                        </div>
+                        <div class="section-card p-5">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="font-heading font-600 text-sm text-earth-900">Environment Cleanup</span>
+                            </div>
+                            <span class="text-[10px] font-mono text-earth-400">May 2026</span>
+                            <ul class="mt-3 space-y-1.5">
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-red-500 mt-0.5 flex-shrink-0">−</span>
+                                    Removed legacy <code
+                                        class="font-mono bg-earth-100 px-1 rounded text-earth-700">pdftoppm</code>
+                                    dependency (Windows incompatible)
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-red-500 mt-0.5 flex-shrink-0">−</span>
+                                    Fixed <code class="font-mono bg-earth-100 px-1 rounded text-earth-700">.env</code>
+                                    pathing issues for API key loading
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Switched to Gemini Native PDF API (no external OCR)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Entry 3 -->
+                    <div class="relative pl-10">
+                        <div
+                            class="absolute left-0 top-1 w-[31px] h-[31px] rounded-full bg-earth-300 flex items-center justify-center z-10">
+                            <i data-lucide="flag" class="w-3.5 h-3.5 text-white"></i>
+                        </div>
+                        <div class="section-card p-5">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="font-heading font-600 text-sm text-earth-900">Initial Prototype</span>
+                            </div>
+                            <span class="text-[10px] font-mono text-earth-400">Pre-May 2026</span>
+                            <ul class="mt-3 space-y-1.5">
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Initial UI/UX prototype with Warm Earthy Theme
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Backend API foundation with Fastify
+                                </li>
+                                <li class="flex items-start gap-2 text-xs text-earth-600">
+                                    <span class="text-green-500 mt-0.5 flex-shrink-0">+</span>
+                                    Basic Gemini integration (1.5 models)
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ FOOTER ============ -->
+            <footer class="border-t border-earth-200 pt-8 pb-12">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-2.5">
+                        <div
+                            class="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center">
+                            <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-white"></i>
+                        </div>
+                        <span class="font-heading font-600 text-sm text-earth-900">Exam-Ace-Analyzer</span>
+                        <span class="text-xs text-earth-400 font-ui">v2026.5</span>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-earth-400">
+                        <span>Built with React 19 · Fastify · Gemini 2.5</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-earth-400">
+                        <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                        <span>Documentation generated May 2026</span>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast bg-earth-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5" id="toast">
+        <i data-lucide="check-circle-2" class="w-4 h-4 text-green-400 flex-shrink-0"></i>
+        <span class="text-sm font-body" id="toastMessage">Copied to clipboard!</span>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // ========== SIDEBAR ACTIVE STATE ==========
+        const sections = document.querySelectorAll('section[id]');
+        const sidebarLinks = document.querySelectorAll('#sidebarNav .sidebar-link');
+        const mobileSidebarLinks = document.querySelectorAll('#mobileSidebarNav .sidebar-link');
+
+        function updateActiveSidebar() {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (window.scrollY >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            [sidebarLinks, mobileSidebarLinks].forEach(links => {
+                links.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveSidebar, { passive: true });
+        updateActiveSidebar();
+
+        // ========== MOBILE SIDEBAR ==========
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            const isOpen = sidebar.classList.contains('open');
+
+            if (isOpen) {
+                sidebar.classList.remove('open');
+                overlay.classList.add('hidden');
+                document.body.style.overflow = '';
+            } else {
+                sidebar.classList.add('open');
+                overlay.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        // ========== TOAST ==========
+        let toastTimeout;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            toastMessage.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // ========== COPY PROJECT INFO ==========
+        function copyProjectInfo() {
+            const info = `# Exam-Ace-Analyzer — Project Summary
+
+## Overview
+AI-native educational platform for exam paper analysis and interactive tutoring.
+
+## Stack
+- Frontend: React 19 + Vite 7 + Tailwind CSS 4 + Radix UI + React Query
+- Backend: Fastify v4+ + Node.js 22 LTS + Pino
+- AI: Google Gemini 2.5 Flash (2026 Stable)
+- Deployment: Vercel (FE) + Railway (BE)
+
+## Key Features
+1. Gemini 2.5 Flash analysis with Chain-of-Thought prompting
+2. Multimodal OCR (native PDF, no external tools)
+3. Socratic tutoring style via context injection
+4. "Study Pulse" focus music with triple-CDN redundancy
+5. Warm Earthy neo-agency design system
+6. Split-pane PDF/Questions viewer
+
+## Status
+Phase 1 Complete (May 2026) — 4/6 features delivered
+Phase 2 Upcoming — Voice tutoring + Collaborative sync`;
+
+            navigator.clipboard.writeText(info).then(() => {
+                showToast('Project summary copied to clipboard!');
+            }).catch(() => {
+                showToast('Failed to copy — try manually.');
+            });
+        }
+
+        // ========== EXPORT MARKDOWN ==========
+        function exportMarkdown() {
+            const info = `# Exam-Ace-Analyzer — Full Documentation
+
+> Generated May 2026 | Version 2026.5
+
+---
+
+## 1. Project Overview
+Exam-Ace-Analyzer is a high-fidelity, AI-native educational platform designed to analyze examination papers and provide interactive tutoring. It leverages the 2026 standard for generative AI (Gemini 2.5) to provide real-time document intelligence.
+
+## 2. System Architecture
+Modern decoupled architecture:
+- **Client**: React 19 SPA (Vite 7)
+- **Server**: Fastify v4+ (Node.js 22 LTS)
+- **AI Engine**: Google Gemini 2.5 Flash
+
+## 3. Technology Stack
+
+| Layer | Technology | Version | Purpose |
+|-------|-----------|---------|---------|
+| Frontend | React | 19 | UI framework |
+| Frontend | Vite | 7 | Build tool |
+| Frontend | Tailwind CSS | 4 | Styling |
+| Frontend | Radix UI + Shadcn/UI | — | Components |
+| Frontend | React Query | TanStack | State management |
+| Frontend | Lucide React | — | Icons |
+| Backend | Fastify | v4+ | API framework |
+| Backend | Node.js | 22 LTS | Runtime |
+| Backend | Pino | — | Logging |
+| AI | Gemini 2.5 Flash | 2026 Stable | Document understanding |
+| AI | @google/generative-ai | SDK | Low-latency inference |
+
+## 4. AI Engine Details
+- **Chain-of-Thought Prompting**: Identifies Question Stem, Options, Cognitive Level
+- **Multimodal OCR**: Native PDF/image processing for formulas and diagrams
+- **Socratic Context Injection**: System instructions enforce tutoring style
+- **Safety Config**: BLOCK_NONE for educational content
+
+## 5. Study Pulse Music Engine
+- Glassmorphic top-right controller
+- Triple-CDN redundancy (SoundHelix, Pixabay, private stream)
+- Interaction-unlock autoplay strategy
+- Bug fix: stopPropagation for pause button race condition
+
+## 6. Data Lifecycle
+1. Ingestion → PDF upload, converted to Buffer/Base64
+2. Transformation → Raw PDF sent to Gemini as document part
+3. Extraction → Questions identified with IDs, subjects, cognitive levels
+4. Interaction → Scaffolded Socratic tutoring on click
+
+## 7. Frontend Design
+- "Warm Earthy" palette (burnt orange, deep blue, organic backgrounds)
+- Split-pane viewer (PDF left, AI questions right)
+- Typography: Work Sans (headings) + Manrope (body) + Inter (UI) + JetBrains Mono (code)
+
+## 8. Roadmap
+### Phase 1 — Complete (May 2026)
+- [x] UI/UX Prototype
+- [x] Backend API Integration
+- [x] Gemini 2.5 Flash Migration
+- [x] Study Pulse Music Engine
+
+### Phase 2 — Q3 2026
+- [ ] Voice-to-Question Interaction
+- [ ] Collaborative Study Sync
+- [ ] Synchronized Focus Music
+
+### Phase 3 — Q4 2026
+- [ ] 3D Diagram Generation (WebGL)
+- [ ] Spaced Repetition
+- [ ] Performance Analytics
+
+## 9. Deployment
+- **Frontend**: Vercel (Edge CDN, Auto SSL, Preview Deploys)
+- **Backend**: Railway (Auto-deploy, Env Vars, Health Checks)
+- **Diagnostics**: Custom list-models.mjs script
+
+## 10. Changelog
+### May 2026 — Stabilization
+- Migrated to Gemini 2.5 Flash
+- Implemented Study Pulse engine
+- Fixed pause button race condition
+- Removed pdftoppm dependency
+- Fixed .env pathing issues
+
+### Pre-May 2026 — Initial
+- UI/UX prototype
+- Fastify backend foundation
+- Basic Gemini 1.5 integration
+`;
+
+            const blob = new Blob([info], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'exam-ace-analyzer-docs.md';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Markdown file downloaded!');
+        }
+
+        // ========== COPY CODE BLOCK ==========
+        function copyCode(btn) {
+            const pre = btn.closest('.code-block')?.querySelector('pre') || btn.closest('div')?.querySelector('pre');
+            if (pre) {
+                navigator.clipboard.writeText(pre.textContent).then(() => {
+                    showToast('Code copied to clipboard!');
+                });
+            }
+        }
+
+        // ========== SCROLL ANIMATIONS ==========
+        const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.animate-fade-up, .animate-fade-in').forEach(el => {
+            el.style.animationPlayState = 'paused';
+            observer.observe(el);
+        });
+
+        // Allow first visible elements to animate immediately
+        setTimeout(() => {
+            document.querySelectorAll('.animate-fade-up, .animate-fade-in').forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < window.innerHeight) {
+                    el.style.animationPlayState = 'running';
+                }
+            });
+        }, 100);
+    </script>
+</body>
+
+</html>

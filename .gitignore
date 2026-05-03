@@ -47,3 +47,14 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Environment
+.env
+.env.*
+artifacts/**/.env
+
+# Build & Cache
+.pnpm-debug.log*
+.agents/
+**/__pycache__/
+**/scratch/
