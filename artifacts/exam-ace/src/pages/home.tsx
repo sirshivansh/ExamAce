@@ -39,6 +39,7 @@ interface AnalysisResult {
   importantTopics: ImportantTopic[];
   expectedQuestions: string[];
   questions?: ExtractedQuestion[];
+  lowConfidenceQuestions?: ExtractedQuestion[];
   pageImages?: Record<string, string[]>;
 }
 
@@ -497,7 +498,20 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [answerPanel, setAnswerPanel] = useState<AnswerPanelState | null>(null);
+  const [rateLimitCountdown, setRateLimitCountdown] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (rateLimitCountdown === null) return;
+    if (rateLimitCountdown <= 0) {
+      setRateLimitCountdown(null);
+      return;
+    }
+    const t = setInterval(() => {
+      setRateLimitCountdown(prev => prev !== null ? prev - 1 : null);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [rateLimitCountdown]);
 
   const addFiles = useCallback((incoming: FileList | File[]) => {
     const pdfs = Array.from(incoming).filter(f => f.type === "application/pdf");
@@ -532,6 +546,11 @@ export default function Home() {
     try {
       const res = await fetch("/api/analyze", { method: "POST", body: formData });
       if (!res.ok) {
+        if (res.status === 429) {
+          const data = await res.json().catch(() => ({}));
+          setRateLimitCountdown(data.retryAfter || 60);
+          throw new Error("Rate limit exceeded. Please wait before trying again.");
+        }
         let msg: string | undefined;
         try { msg = ((await res.json()) as { error?: string }).error; } catch { /* ignore */ }
         throw new Error(msg || "Something went wrong. Try another PDF.");
@@ -557,6 +576,11 @@ export default function Home() {
         body: JSON.stringify({ question }),
       });
       if (!res.ok) {
+        if (res.status === 429) {
+          const data = await res.json().catch(() => ({}));
+          setRateLimitCountdown(data.retryAfter || 60);
+          throw new Error("Rate limit exceeded. Please wait before trying again.");
+        }
         const err = await res.json().catch(() => ({}));
         throw new Error((err as { error?: string }).error || "Failed to generate answer.");
       }
@@ -575,6 +599,7 @@ export default function Home() {
 
   const pageImages = result?.pageImages ?? {};
   const extractedQuestions = result?.questions ?? [];
+  const lowConfidenceQuestions = result?.lowConfidenceQuestions ?? [];
   const hasPageImages = Object.keys(pageImages).length > 0;
 
   // Determine which images to show in the PDF viewer
@@ -592,6 +617,14 @@ export default function Home() {
 
       <ThemeToggle />
       <DocsButton />
+
+      {/* Rate Limit Countdown Banner */}
+      {rateLimitCountdown !== null && rateLimitCountdown > 0 && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] bg-amber-500/90 text-white px-4 py-2 rounded-full shadow-lg backdrop-blur-md flex items-center gap-2 border border-amber-400/50 animate-in fade-in slide-in-from-top-4">
+          <AlertCircle className="w-4 h-4" />
+          <span className="text-sm font-medium">Rate limit resetting in {rateLimitCountdown}s...</span>
+        </div>
+      )}
 
       {/* Decorative Blob Shapes (Agency Style) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-100 mix-blend-normal">
@@ -769,12 +802,19 @@ export default function Home() {
               {/* Col 1: Tabs */}
               <div>
                 <Tabs defaultValue={extractedQuestions.length > 0 ? "questions" : "repeated"} className="w-full">
-                  <TabsList className={`w-full grid mb-5 rounded-xl bg-muted/40 border border-border/40 p-1 h-auto gap-1 ${extractedQuestions.length > 0 ? "grid-cols-4" : "grid-cols-3"}`}>
+                  <TabsList className={`w-full grid mb-5 rounded-xl bg-muted/40 border border-border/40 p-1 h-auto gap-1 ${(extractedQuestions.length > 0 || lowConfidenceQuestions.length > 0) ? (extractedQuestions.length > 0 && lowConfidenceQuestions.length > 0 ? "grid-cols-5" : "grid-cols-4") : "grid-cols-3"}`}>
                     {extractedQuestions.length > 0 && (
                       <TabsTrigger value="questions" className="gap-1 text-xs rounded-lg py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/60">
                         <FileSearch className="w-3.5 h-3.5" />
                         <span className="hidden sm:inline">Questions</span>
                         <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-sky-500/15 text-sky-400 font-bold">{extractedQuestions.length}</span>
+                      </TabsTrigger>
+                    )}
+                    {lowConfidenceQuestions.length > 0 && (
+                      <TabsTrigger value="statements" className="gap-1 text-xs rounded-lg py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/60">
+                        <AlignLeft className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">Statements</span>
+                        <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-500/15 text-slate-400 font-bold">{lowConfidenceQuestions.length}</span>
                       </TabsTrigger>
                     )}
                     <TabsTrigger value="repeated" className="gap-1.5 text-xs rounded-lg py-2 data-[state=active]:bg-card data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-border/60">
@@ -809,6 +849,27 @@ export default function Home() {
                             index={i}
                             isActive={answerPanel?.question === item.question}
                             onClick={() => handleQuestionClick(item.question, item.source, computeHighlightY(item, extractedQuestions))}
+                          />
+                        ))}
+                      </div>
+                    </TabsContent>
+                  )}
+
+                  {/* Statements tab */}
+                  {lowConfidenceQuestions.length > 0 && (
+                    <TabsContent value="statements">
+                      <p className="text-xs text-muted-foreground/60 mb-3 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Short statements or logic propositions extracted from the text
+                      </p>
+                      <div className="flex flex-col gap-2 max-h-[520px] overflow-y-auto scrollable-list pr-0.5">
+                        {lowConfidenceQuestions.map((item, i) => (
+                          <ExtractedQuestionCard
+                            key={`lc-${i}`}
+                            item={item}
+                            index={i}
+                            isActive={answerPanel?.question === item.question}
+                            onClick={() => handleQuestionClick(item.question, item.source, computeHighlightY(item, lowConfidenceQuestions))}
                           />
                         ))}
                       </div>

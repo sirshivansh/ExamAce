@@ -55,14 +55,20 @@ interface ExtractedQuestion {
   source: { fileName: string; page: number };
 }
 
+interface ExtractionResult {
+  questions: ExtractedQuestion[];
+  lowConfidenceQuestions: ExtractedQuestion[];
+}
+
 // ── Question extraction from plain text ───────────────────────────────────────
 function extractQuestionsFromText(
   text: string,
   fileName: string,
   totalPages: number
-): ExtractedQuestion[] {
+): ExtractionResult {
   const lines = text.split("\n");
   const results: ExtractedQuestion[] = [];
+  const lowConfidence: ExtractedQuestion[] = [];
   const charsPerPage = text.length / Math.max(totalPages, 1);
   let charOffset = 0;
 
@@ -85,20 +91,36 @@ function extractQuestionsFromText(
     }
 
     const fullQuestion = parts.join(" ").replace(/\s+/g, " ").trim();
+    
     if (fullQuestion.length < 15) continue;
 
     const estimatedPage = Math.max(1, Math.min(Math.ceil(charOffset / charsPerPage), totalPages));
     const words = fullQuestion.split(/\s+/);
     const snippet = words.slice(0, 10).join(" ");
 
-    results.push({
+    let isLikelyQuestion = true;
+    if (!fullQuestion.includes("?")) {
+      const startsWithVerb = /^(explain|discuss|describe|compare|what|how|why|list|state|define|write|elaborate|illustrate|outline|evaluate|analyze)/i.test(m[2].trim());
+      if (!startsWithVerb && fullQuestion.length < 80) isLikelyQuestion = false;
+    }
+
+    const questionObj = {
       question: fullQuestion.slice(0, 500),
       snippet,
       source: { fileName, page: estimatedPage },
-    });
+    };
+
+    if (isLikelyQuestion) {
+      results.push(questionObj);
+    } else {
+      lowConfidence.push(questionObj);
+    }
   }
 
-  return results.slice(0, 60);
+  return {
+    questions: results.slice(0, 60),
+    lowConfidenceQuestions: lowConfidence.slice(0, 60),
+  };
 }
 
 // ── AI prompts ────────────────────────────────────────────────────────────────
@@ -154,7 +176,7 @@ Return ONLY:
 { "expectedQuestions": ["...", "..."] }`;
 
 // ── AI helpers ────────────────────────────────────────────────────────────────
-async function callAI(prompt: string, pdfBuffer?: Buffer): Promise<string> {
+async function callAI(prompt: string, pdfBuffer?: Buffer, isJson = false): Promise<string> {
   const parts: any[] = [{ text: prompt }];
   
   if (pdfBuffer) {
@@ -168,7 +190,8 @@ async function callAI(prompt: string, pdfBuffer?: Buffer): Promise<string> {
 
   try {
     const model = getAI();
-    const result = await model.generateContent(parts);
+    const config = isJson ? { responseMimeType: "application/json" } : {};
+    const result = await model.generateContent({ contents: [{ role: "user", parts }], generationConfig: config });
     const response = await result.response;
     return response.text();
   } catch (err: any) {
@@ -210,16 +233,20 @@ async function callAIWithRetry(
   prompt: string,
   label: string,
   log: (m: string) => void,
-  logErr: (m: string, e?: unknown) => void
+  logErr: (m: string, e?: unknown) => void,
+  isJson = false
 ): Promise<string | null> {
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       log(`[${label}] AI call attempt ${attempt}…`);
-      const text = await callAI(prompt);
+      const text = await callAI(prompt, undefined, isJson);
       log(`[${label}] AI responded length=${text.length}`);
       return text;
-    } catch (err) {
+    } catch (err: any) {
       logErr(`[${label}] AI call failed (attempt ${attempt})`, err);
+      if (err.status === 429) {
+        throw err;
+      }
       if (attempt === 2) return null;
     }
   }
@@ -280,6 +307,7 @@ router.post("/analyze", upload.array("file", 10), async (req, res) => {
   // ── Step 1: Parse each PDF (with OCR fallback), extract questions, gather images ──
   const textParts: string[] = [];
   const allQuestions: ExtractedQuestion[] = [];
+  const allLowConfidence: ExtractedQuestion[] = [];
   const pageImages: Record<string, string[]> = {};
 
   for (let i = 0; i < files.length; i++) {
@@ -315,9 +343,10 @@ router.post("/analyze", upload.array("file", 10), async (req, res) => {
     textParts.push(text);
 
     // Extract questions from this PDF's text
-    const pdfQuestions = extractQuestionsFromText(text, f.originalname, totalPages);
-    log(`Extracted ${pdfQuestions.length} questions from "${f.originalname}"`);
+    const { questions: pdfQuestions, lowConfidenceQuestions: pdfLow } = extractQuestionsFromText(text, f.originalname, totalPages);
+    log(`Extracted ${pdfQuestions.length} questions and ${pdfLow.length} low-confidence statements from "${f.originalname}"`);
     allQuestions.push(...pdfQuestions);
+    allLowConfidence.push(...pdfLow);
 
     // Generate page images for this PDF (non-fatal)
     const imgs = await generatePageImages(f.buffer, f.originalname, log, logErr);
@@ -330,19 +359,27 @@ router.post("/analyze", upload.array("file", 10), async (req, res) => {
     return;
   }
 
-  const combinedText = textParts.join("\n\n---\n\n").slice(0, 14000);
+  const combinedText = textParts.join("\n\n---\n\n").slice(0, 500000);
   log(`Combined text: ${combinedText.length} chars from ${textParts.length} readable PDF(s)`);
 
   // ── Step 2: AI analysis ────────────────────────────────────────────────────
   let repeatedQuestions: Array<{ question: string; count: number }> = [];
   let importantTopics: Array<{ topic: string; priority: string }> = [];
 
-  log("Calling AI for main analysis…");
-  const analysisRaw = await callAIWithRetry(ANALYSIS_PROMPT + combinedText, "analysis", log, logErr);
+  let analysisRaw: string | null = null;
+  try {
+    analysisRaw = await callAIWithRetry(ANALYSIS_PROMPT + combinedText, "analysis", log, logErr, true);
+  } catch (err: any) {
+    if (err.status === 429) {
+      logErr("Rate limit exceeded during analysis");
+      res.status(429).json({ error: "Rate limit exceeded", retryAfter: 60 });
+      return;
+    }
+  }
 
   if (analysisRaw === null) {
     logErr("Analysis AI failed — returning fallback");
-    res.json({ ...FALLBACK, questions: allQuestions, pageImages });
+    res.json({ ...FALLBACK, questions: allQuestions, lowConfidenceQuestions: allLowConfidence, pageImages });
     return;
   }
 
@@ -363,7 +400,7 @@ router.post("/analyze", upload.array("file", 10), async (req, res) => {
     log(`Analysis: ${repeatedQuestions.length} repeated, ${importantTopics.length} topics`);
   } catch (err) {
     logErr("Failed to parse analysis JSON — returning with extracted questions", err);
-    res.json({ ...FALLBACK, repeatedQuestions: [], importantTopics: [], questions: allQuestions, pageImages });
+    res.json({ ...FALLBACK, repeatedQuestions: [], importantTopics: [], questions: allQuestions, lowConfidenceQuestions: allLowConfidence, pageImages });
     return;
   }
 
@@ -376,7 +413,8 @@ router.post("/analyze", upload.array("file", 10), async (req, res) => {
       buildExpectedQuestionsPrompt(repeatedQuestions, importantTopics),
       "expected-questions",
       log,
-      logErr
+      logErr,
+      true
     );
     if (expectedRaw !== null) {
       try {
@@ -393,8 +431,8 @@ router.post("/analyze", upload.array("file", 10), async (req, res) => {
   }
 
   // ── Return ─────────────────────────────────────────────────────────────────
-  log(`Result: ${repeatedQuestions.length} repeated, ${importantTopics.length} topics, ${expectedQuestions.length} expected, ${allQuestions.length} extracted, ${Object.keys(pageImages).length} PDFs with images`);
-  res.json({ repeatedQuestions, importantTopics, expectedQuestions, questions: allQuestions, pageImages });
+  log(`Result: ${repeatedQuestions.length} repeated, ${importantTopics.length} topics, ${expectedQuestions.length} expected, ${allQuestions.length} extracted, ${allLowConfidence.length} low-confidence, ${Object.keys(pageImages).length} PDFs with images`);
+  res.json({ repeatedQuestions, importantTopics, expectedQuestions, questions: allQuestions, lowConfidenceQuestions: allLowConfidence, pageImages });
 });
 
 export default router;

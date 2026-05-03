@@ -22,19 +22,29 @@ function getModel() {
   return _model;
 }
 
-const PROMPT = (question: string) => `You are an expert university exam tutor. Generate a structured, exam-ready answer for the following question suitable for a 10-mark university paper.
+const PROMPT = (question: string) => `You are an expert university exam tutor. Generate a comprehensive, structured, and technically accurate answer suitable for a 10-mark university paper.
 
-Question: ${question}
+IMPORTANT INSTRUCTIONS:
+1. If the question text contains multiple concatenated questions (e.g. due to OCR errors), choose ONLY the most prominent or first logical question to answer. Ignore the rest.
+2. Return ONLY a valid JSON object. Do NOT wrap the JSON in markdown code blocks (\`\`\`json). Do NOT add headings like "*Answer*".
+3. Do NOT use markdown (like **bold** or numbered lists) inside the text values. The UI handles formatting.
 
-Return ONLY a valid JSON object with this exact shape:
+The JSON MUST have exactly this shape:
 {
   "answer": {
-    "definition": "A clear 1-2 sentence definition.",
-    "explanation": ["Point 1", "Point 2", "Point 3", "Point 4"],
-    "example": "A concrete example.",
-    "conclusion": "A concise summary."
+    "definition": "A clear, complete 2-3 sentence definition. Plain text only.",
+    "explanation": [
+      "First detailed, technical point that thoroughly explains a concept. Plain text only.",
+      "Second detailed, technical point. Plain text only.",
+      "Third detailed, technical point. Plain text only.",
+      "Fourth detailed, technical point. Plain text only."
+    ],
+    "example": "A concrete and well-explained real-world example. Plain text only.",
+    "conclusion": "A comprehensive concluding summary. Plain text only."
   }
-}`;
+}
+
+Question text: ${question}`;
 
 router.post("/generate-answer", async (req, res) => {
   const { question } = req.body as { question?: string };
@@ -46,7 +56,10 @@ router.post("/generate-answer", async (req, res) => {
 
   try {
     const model = getModel();
-    const result_ai = await model.generateContent(PROMPT(question.trim()));
+    const result_ai = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: PROMPT(question.trim()) }] }],
+      generationConfig: { responseMimeType: "application/json" }
+    });
     const response = await result_ai.response;
     const text = response.text();
 
@@ -64,6 +77,10 @@ router.post("/generate-answer", async (req, res) => {
     console.error("Message:", err.message);
     if (err.status) console.error("Status:", err.status);
     console.error("-------------------------");
+    if (err.status === 429) {
+      res.status(429).json({ error: "Rate limit exceeded. Please wait a moment before trying again.", retryAfter: 60 });
+      return;
+    }
     res.status(500).json({ error: "Generation failed. Check terminal for details." });
   }
 });

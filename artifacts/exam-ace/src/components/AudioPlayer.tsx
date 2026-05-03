@@ -10,8 +10,8 @@ import {
 
 const AudioPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'playing' | 'error'>('idle');
-  const [volume, setVolume] = useState(0.4);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'playing' | 'paused' | 'error'>('idle');
+  const [volume, setVolume] = useState(0.1);
   const [isHovered, setIsHovered] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -55,7 +55,7 @@ const AudioPlayer: React.FC = () => {
       if (isPlaying) {
         audioRef.current.pause();
         setIsPlaying(false);
-        setStatus('idle');
+        setStatus('paused');
       } else {
         setStatus('loading');
         await audioRef.current.play();
